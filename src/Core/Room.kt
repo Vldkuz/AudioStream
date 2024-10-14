@@ -2,10 +2,9 @@ package Core
 
 import java.util.*
 
-
 data class RProfile(
     val name: String,
-    val description: String
+    val description: String?
 )
 
 

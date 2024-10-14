@@ -5,10 +5,10 @@ import kotlin.time.Duration
 
 data class TProfile(
     val name: String,
-    val author: String,
+    val author: String?,
     val uploader: User,
     val uploadDate: Date,
-    val genre: String,
+    val genre: String?,
     val duration: Duration
 )
 
