@@ -1,4 +1,4 @@
-package Core
+package kotlin.main.Core
 
 import java.util.*
 

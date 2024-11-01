@@ -1,4 +1,4 @@
-package Core
+package kotlin.main.Core
 
 data class UProfile(
     val firstName: String,
