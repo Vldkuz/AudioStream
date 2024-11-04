@@ -1,4 +1,4 @@
-package kotlin.webDav
+package kt.webDav
 
 import io.ktor.client.*
 import io.ktor.client.request.*
@@ -7,12 +7,12 @@ import io.ktor.http.*
 import io.ktor.util.*
 import io.ktor.utils.io.*
 import java.security.MessageDigest
-import kotlin.webDav.YandexFileManager.HashUtils.md5
-import kotlin.webDav.YandexFileManager.HashUtils.sha256
-import kotlin.webDav.YandexFileManager.WebDavSpecies
+import kt.webDav.YandexFileManager.HashUtils.md5
+import kt.webDav.YandexFileManager.HashUtils.sha256
+import kt.webDav.YandexFileManager.WebDavSpecies
 
 
-class YandexFileManager(private val token: String, private val client: HttpClient) : IFileManager {
+class YandexFileManager(private val token: String, private val client: HttpClient) : kt.webDav.IFileManager {
     object WebDavSpecies {
         const val SERVER = "webdav.yandex.ru"
         const val SHA_HEADER = "Sha256"
@@ -27,6 +27,10 @@ class YandexFileManager(private val token: String, private val client: HttpClien
         @OptIn(ExperimentalStdlibApi::class)
         fun ByteArray.sha256(): String {
             return MessageDigest.getInstance("SHA-256").digest(this).toHexString()
+        }
+
+        private fun ByteArray.toHexString(): String {
+            return joinToString(separator = "") { eachByte -> "%02x".format(eachByte) }
         }
     }
 
@@ -102,7 +106,7 @@ class YandexFileManager(private val token: String, private val client: HttpClien
 }
 
 
-class YandexStorageManager(private val client: HttpClient, private val token: String) : IStorageManager {
+class YandexStorageManager(private val client: HttpClient, private val token: String) : kt.webDav.IStorageManager {
     override suspend fun getPropertiesFileFolder(path: String): HttpResponse {
         // Получаем свойства по-умолчанию, которые декларированы в доке
         // https://yandex.ru/dev/disk/doc/ru/reference/propfind-resource-properties

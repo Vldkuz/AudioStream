@@ -1,4 +1,4 @@
-package kotlin.main.Infra
+package kt.main.Infra
 
 import org.jetbrains.exposed.sql.Database
 
@@ -11,8 +11,8 @@ class DbConnection(
     private val passwordDb: String
 ) {
     companion object Connection {
-        val Conn = Database.connect(
-            url = urldb
+        fun Connect(conn: DbConnection): Database = Database.connect(
+            url = conn.urlDb
         )
     }
 }
