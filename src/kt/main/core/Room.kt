@@ -1,5 +1,4 @@
-package kt.main.Core
-
+package kt.main.core
 import java.util.*
 
 data class RProfile(

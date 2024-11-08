@@ -1,4 +1,4 @@
-package kt.main.Core
+package kt.main.core
 
 import java.util.*
 import kotlin.time.Duration

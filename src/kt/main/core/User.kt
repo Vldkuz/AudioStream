@@ -1,4 +1,5 @@
-package kt.main.Core
+package kt.main.core
+
 
 data class UProfile(
     val firstName: String,

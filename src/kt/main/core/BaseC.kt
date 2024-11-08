@@ -1,11 +1,11 @@
-package kt.main.Core
+package kt.main.core
 
 import java.util.*
 
 // В остальном доменная область будет допиливаться по необходимости
 
 abstract class Entity {
-    private val id: UUID = UUID.randomUUID()
+    val id: UUID = UUID.randomUUID()
 
     override fun equals(other: Any?): Boolean {
         return other is Entity && id == other.id
