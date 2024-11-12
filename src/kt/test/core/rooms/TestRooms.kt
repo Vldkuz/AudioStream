@@ -22,7 +22,7 @@ open class BaseTestRoomsWithoutID(
     tracks: Queue<Track>,
 ) : BaseTestRoomsWithID(name, desc, participants, tracks, null)
 
-sealed class TestRoomWithRestoredID : BaseTestRoomsWithID(
+class TestRoomWithRestoredID : BaseTestRoomsWithID(
     "CoolRoom",
     "We love pop and rock",
     mutableSetOf(
@@ -30,6 +30,15 @@ sealed class TestRoomWithRestoredID : BaseTestRoomsWithID(
         TestUserWithNullSecondName() as User, TestUserWithNullLastName() as User, TestUserWithNullAllFields() as User,
         TestUserWithUpperLogin() as User
     ),
-    LinkedList()
+    LinkedList(),
+    UUID.fromString("9771a0b7-3827-475d-8b2e-be4af53ab84b")
 )
+
+class TestRoomWithRandomID : BaseTestRoomsWithoutID(
+    "CoolRoom",
+    "We love pop and rock",
+    mutableSetOf(),
+    LinkedList(),
+)
+
 
