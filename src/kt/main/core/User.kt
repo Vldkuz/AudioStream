@@ -1,11 +1,13 @@
 package kt.main.core
 
+import java.util.*
+
 
 data class UProfile(
     val firstName: String,
-    val secondName: String?,
-    val lastName: String?,
-    val age: Int?
+    val secondName: String? = null,
+    val lastName: String? = null,
+    val age: Int? = null
 )
 
 
@@ -15,7 +17,8 @@ data class Auth(
 )
 
 
-class User(
+open class User(
     val uProfile: UProfile,
-    val auth: Auth
-) : Entity()
+    val auth: Auth,
+    id: UUID? = null
+) : Entity(id)

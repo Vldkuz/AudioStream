@@ -7,9 +7,10 @@ data class RProfile(
 )
 
 
-class Room(
+open class Room(
     val rProfile: RProfile,
     val participants: MutableSet<User> = mutableSetOf(),
     val trackQueue: Queue<Track> = LinkedList(),
-) : Entity()
+    id: UUID? = null
+) : Entity(id)
 

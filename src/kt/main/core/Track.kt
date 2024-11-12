@@ -12,7 +12,8 @@ data class TProfile(
     val duration: Duration
 )
 
-class Track(
+open class Track(
     val tProfile: TProfile,
     val data: ByteArray,
-) : Entity()
+    id: UUID? = null,
+) : Entity(id)
