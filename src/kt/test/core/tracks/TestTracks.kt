@@ -10,12 +10,12 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 open class BaseTestTrackWithId(
-    val name: String,
-    val author: String?,
-    val uploader: User,
-    val uploadDate: Date,
-    val genre: String?,
-    val duration: Duration,
+    name: String,
+    author: String?,
+    uploader: User,
+    uploadDate: Date,
+    genre: String?,
+    duration: Duration,
     id: UUID? = null,
 ) : Track(TProfile(
     name,
@@ -26,6 +26,7 @@ open class BaseTestTrackWithId(
     duration
 ), byteArrayOf(), id)
 
+@Suppress("DEPRECATION")
 class TestTrackWithRestoredId : BaseTestTrackWithId (
     "Californication",
     "Red Hot Chili Peppers",
@@ -36,6 +37,7 @@ class TestTrackWithRestoredId : BaseTestTrackWithId (
     UUID.fromString("dd5e0c5f-0707-406e-b0e8-c51c6cfb3728")
 )
 
+@Suppress("DEPRECATION")
 class  TestTrackWithRandomId : BaseTestTrackWithId (
     "This War Is Ours",
     "Escape the Fate",
