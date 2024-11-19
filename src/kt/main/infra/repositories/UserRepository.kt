@@ -41,7 +41,7 @@ class UserRepository(database: Database) : RepositoryBase<User>(database, UserPr
 
     override suspend fun getByName(name: String): List<User> {
         val usersByName = dbQuery {
-            (UsersTable innerJoin UserProfilesTable)
+            (UsersTable innerJoin UserProfilesTable innerJoin AuthTable)
                 .select(
                     idUser, UserProfilesTable.firstName,
                     UserProfilesTable.secondName, UserProfilesTable.lastName,

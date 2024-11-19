@@ -76,19 +76,20 @@ class UserRepositoryTest : BaseInfraTest() {
 
     @Test
     fun testGetByName() {
-        runBlocking {
-            val firstName = users[0].uProfile.firstName
-            val usersWithFirstName = users.filter { it.uProfile.firstName == firstName }
-            val usersInDB = userRepository!!.getByName(firstName)
-            assertEquals(usersWithFirstName, usersInDB)
+        val firstName = users[0].uProfile.firstName
+        val usersWithFirstName = users.filter { it.uProfile.firstName == firstName }
+
+        val usersInDB =  runBlocking {
+            userRepository!!.getByName(firstName)
         }
+
+        assertEquals(usersWithFirstName, usersInDB)
     }
 
     @Test
     fun testGetById() {
         val user = users[0]
         val id = user.id
-        println(id)
 
         val userInDb = runBlocking {
             userRepository!!.getById(id)
@@ -100,23 +101,28 @@ class UserRepositoryTest : BaseInfraTest() {
 
     @Test
     fun testUpdate() {
+        val id = users[0].id
+
+        val rProfile = UProfile(
+            "Biba"
+        )
+
+        val auth = Auth(
+            "loginov",
+            "Biba023543"
+        )
+
+        val user = User(rProfile, auth, id)
+
         runBlocking {
-            val id = users[0].id
-
-            val rProfile = UProfile(
-                "Biba"
-            )
-
-            val auth = Auth(
-                "loginov",
-                "Biba023543"
-            )
-
-            val user = User(rProfile, auth, id)
             userRepository!!.update(user)
-            val userInDb = userRepository!!.getById(id)
-            assertEquals(user, userInDb)
         }
+
+        val userInDb = runBlocking {
+            userRepository!!.getById(id)
+        }
+
+        assertEquals(user, userInDb)
     }
 
     @Test
