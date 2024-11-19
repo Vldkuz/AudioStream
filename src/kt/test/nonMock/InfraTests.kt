@@ -15,7 +15,6 @@ import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.testng.AssertJUnit.assertEquals
-import org.testng.annotations.AfterClass
 import org.testng.annotations.BeforeClass
 import org.testng.annotations.Test
 import java.util.*
@@ -96,7 +95,6 @@ class UserRepositoryTest : BaseInfraTest() {
         val userInDb = runBlocking {
             userRepository!!.getById(id)
         }
-
 
         assertEquals(user, userInDb)
     }

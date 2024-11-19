@@ -63,7 +63,6 @@ class UserRepository(database: Database) : RepositoryBase<User>(database, UserPr
     }
 
     override suspend fun getById(id: UUID): User? {
-        println(id)
         val idS = dbQuery {
             UsersTable
                 .select(idUser, UsersTable.idAuth, UsersTable.idProfile)
