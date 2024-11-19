@@ -15,6 +15,7 @@ import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.testng.AssertJUnit.assertEquals
+import org.testng.annotations.AfterClass
 import org.testng.annotations.BeforeClass
 import org.testng.annotations.Test
 import java.util.*
@@ -86,6 +87,7 @@ class UserRepositoryTest : BaseInfraTest() {
         assertEquals(usersWithFirstName, usersInDB)
     }
 
+
     @Test
     fun testGetById() {
         val user = users[0]
@@ -98,6 +100,7 @@ class UserRepositoryTest : BaseInfraTest() {
 
         assertEquals(user, userInDb)
     }
+
 
     @Test
     fun testUpdate() {
@@ -128,7 +131,7 @@ class UserRepositoryTest : BaseInfraTest() {
     @Test
     fun testRemove() {
         runBlocking {
-            val deleteUser = users[0]
+            val deleteUser = users[1]
             val id = deleteUser.id
             userRepository!!.remove(deleteUser)
             assertEquals(null, userRepository!!.getById(id))

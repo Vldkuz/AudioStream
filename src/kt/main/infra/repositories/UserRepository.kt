@@ -108,31 +108,27 @@ class UserRepository(database: Database) : RepositoryBase<User>(database, UserPr
     }
 
     override suspend fun update(entity: User) {
-        val resultRow = dbQuery {
-            val resultRow = UsersTable
+        val result = dbQuery {
+            UsersTable
                 .select(UsersTable.idProfile, UsersTable.idAuth)
                 .where(idUser eq entity.id)
-
-            val idAuth = resultRow.map { it[UsersTable.idAuth] }.singleOrNull()
-            val idProfile = resultRow.map { it[UsersTable.idProfile] }.singleOrNull()
-
-            if (idAuth == null || idProfile == null) {
-                throw InsertDbError("Can not update unknown user with id ${entity.id}")
-            }
-
-            Pair(idProfile, idAuth)
+                .map { row -> Pair(row[UsersTable.idProfile],row[UsersTable.idAuth])}
+                .singleOrNull()
         }
 
+        if (result == null) {
+            throw InsertDbError("Can not update unknown user with id ${entity.id}")
+        }
 
         dbQuery {
-            UserProfilesTable.update({ UserProfilesTable.idProfile eq resultRow.first }) {
+            UserProfilesTable.update({ UserProfilesTable.idProfile eq result.first }) {
                 it[firstName] = entity.uProfile.firstName
                 it[secondName] = entity.uProfile.secondName
                 it[lastName] = entity.uProfile.lastName
                 it[age] = entity.uProfile.age
             }
 
-            AuthTable.update({ AuthTable.idAuth eq resultRow.second }) {
+            AuthTable.update({ AuthTable.idAuth eq result.second }) {
                 it[login] = entity.auth.login
                 it[hashPass] = entity.auth.hashPass
             }
