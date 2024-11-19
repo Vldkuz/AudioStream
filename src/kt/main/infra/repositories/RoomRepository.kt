@@ -1,50 +1,133 @@
 package kt.main.infra.repositories
 
+import kt.main.core.RProfile
 import kt.main.core.Room
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.Table
-import org.jetbrains.exposed.sql.insert
+import kt.main.core.Track
+import kt.main.core.User
+import kt.main.infra.InsertDbError
+import kt.main.infra.RoomProfilesTable
+import kt.main.infra.RoomProfilesTable.description
+import kt.main.infra.RoomProfilesTable.roomName
+import kt.main.infra.RoomTable
+import kt.main.infra.RoomTable.idParticipants
+import kt.main.infra.RoomTable.idProfile
+import kt.main.infra.RoomTable.idRoom
+import kt.main.infra.RoomTable.idTracks
+import kt.main.infra.UserProfilesTable
+import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.util.*
 
-class RoomRepository(database: Database) : RepositoryBase<Room>(database, RoomProfilesTable, RoomTable) {
-    object RoomProfilesTable : Table("RoomProfiles") {
-        val idRoom = integer("id").autoIncrement()
-        val roomName = varchar("roomName", 30)
-        val description = varchar("description", 50).nullable()
-        override val primaryKey = PrimaryKey(idRoom, name = "PK_ID_PROFILE")
-    }
-
-    object RoomTable : Table("Rooms") {
-        val idRoom = uuid("idRoom")
-        val idProfile = (integer("idProfile") references RoomProfilesTable.idRoom)
-        val idParticipants = array<UUID>("idParticipants")
-        val idTracks = array<UUID>("idTracks")
-    }
+class RoomRepository(
+    database: Database,
+    private val trackRepository: TrackRepository,
+    private val userRepository: UserRepository
+) : RepositoryBase<Room>(database, RoomProfilesTable, RoomTable) {
 
     override suspend fun getAll(): List<Room> {
-        TODO("Not Yet")
+        val allRooms = dbQuery {
+            (RoomTable innerJoin RoomProfilesTable)
+                .select(
+                    idRoom, idProfile,
+                    idTracks, idParticipants, roomName,
+                    description
+                )
+                .map { row -> createRoomFromResultRow(row) }
+        }
+
+        return allRooms
     }
 
     override suspend fun getByName(name: String): List<Room> {
-        TODO("Not yet implemented")
+        val result = dbQuery {
+            (RoomTable innerJoin UserProfilesTable)
+                .select(
+                    idRoom, idProfile,
+                    idTracks, idParticipants, roomName,
+                    description
+                )
+                .where { roomName eq name }
+                .map { row -> createRoomFromResultRow(row) }
+        }
+
+        return result
     }
 
     override suspend fun getById(id: UUID): Room? {
-        TODO("Not yet implemented")
+        val result = dbQuery {
+            (RoomTable innerJoin RoomProfilesTable).select(
+                idRoom, idProfile,
+                idTracks, idParticipants, roomName,
+                description
+            )
+                .where { idRoom eq id }
+                .map { row -> createRoomFromResultRow(row) }
+        }
+
+        if (result.isEmpty())
+            return null
+
+        return result.first()
     }
 
+
     override suspend fun update(entity: Room) {
-        TODO("Not yet implemented")
+        val idRProfile = dbQuery { RoomTable.select(idProfile).where { idRoom eq entity.id }.single()[idProfile] }
+
+        dbQuery {
+            RoomProfilesTable.update({ idProfile eq idRProfile }) {
+                it[roomName] = entity.rProfile.name
+                it[description] = entity.rProfile.description
+            }
+        }
+
+        dbQuery {
+            RoomTable.update({ idRoom eq entity.id }) { it ->
+                it[idParticipants] = entity.participants.map { it.id }
+                it[idTracks] = entity.trackQueue.map { it.id }
+            }
+        }
     }
 
     override suspend fun remove(entity: Room) {
-        TODO("Not yet implemented")
+        dbQuery {
+            RoomTable.deleteWhere { idRoom eq entity.id }
+        }
     }
 
     override suspend fun add(entity: Room) {
-        RoomTable.insert {
-            it[idRoom] = entity.id
-            // Остановился здесь, нужно будет сначала добавить записи в RoomProfiles.
+        val idProfileGet = dbQuery {
+            RoomProfilesTable.insert {
+                it[roomName] = entity.rProfile.name
+                it[description] = entity.rProfile.description
+            } get RoomProfilesTable.idProfile
         }
+
+        val hasUnknownId = dbQuery {
+            entity.participants
+                .map { userRepository.getById(it.id) }
+        }
+
+        if (hasUnknownId.contains(null)) {
+            throw InsertDbError("Can not add unknown user with id ${hasUnknownId.indexOf(null)}")
+        }
+
+        dbQuery {
+            RoomTable.insert { it ->
+                it[idRoom] = entity.id
+                it[idParticipants] = entity.participants.map { it.id }
+                it[idProfile] = idProfileGet
+                it[idTracks] = entity.trackQueue.map { it.id }
+            }
+        }
+    }
+
+    private suspend fun createRoomFromResultRow(row: ResultRow): Room {
+        val profile = RProfile(row[roomName], row[description])
+        val participants = row[idParticipants].map { userRepository.getById(it) as User }.toMutableSet()
+        val tracks = row[idTracks]
+            .map { trackRepository.getById(it) as Track }
+            .toCollection(LinkedList())
+        return Room(profile, participants, tracks, row[idRoom])
     }
 }

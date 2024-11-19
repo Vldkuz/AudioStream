@@ -1,13 +1,14 @@
 package kt.main.core
 
+import org.joda.time.DateTime
+import java.time.Duration
 import java.util.*
-import kotlin.time.Duration
 
 data class TProfile(
     val name: String,
     val author: String?,
     val uploader: User,
-    val uploadDate: Date,
+    val uploadDate: DateTime,
     val genre: String?,
     val duration: Duration
 )

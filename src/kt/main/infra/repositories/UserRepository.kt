@@ -3,36 +3,19 @@ package kt.main.infra.repositories
 import kt.main.core.Auth
 import kt.main.core.UProfile
 import kt.main.core.User
-import kt.main.infra.repositories.UserRepository.UsersTable.idUser
-import org.jetbrains.exposed.sql.*
+import kt.main.infra.AuthTable
+import kt.main.infra.InsertDbError
+import kt.main.infra.UserProfilesTable
+import kt.main.infra.UsersTable
+import kt.main.infra.UsersTable.idUser
+import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.update
 import java.util.*
 
 class UserRepository(database: Database) : RepositoryBase<User>(database, UserProfilesTable, AuthTable, UsersTable) {
-    object UserProfilesTable : Table("userProfiles") {
-        val idProfile = integer("idProfile").autoIncrement()
-        val firstName = varchar("firstName", 50)
-        val secondName = varchar("secondName", 50).nullable()
-        val lastName = varchar("lastName", 50).nullable()
-        val age = integer("age").nullable()
-
-        override val primaryKey = PrimaryKey(idProfile, name = "PK_UserProfile")
-    }
-
-    object AuthTable : Table("auth") {
-        val idAuth = integer("id").autoIncrement()
-        val login = varchar("login", 20).uniqueIndex()
-        val hashPass = varchar("hashPass", 128)
-
-        override val primaryKey = PrimaryKey(idAuth, name = "PK_Auth")
-    }
-
-    object UsersTable : Table("users") {
-        val idUser = uuid("idUser")
-        val idProfile = reference("idProfile", UserProfilesTable.idProfile, onDelete = ReferenceOption.CASCADE)
-        val idAuth = reference("idAuth", AuthTable.idAuth, onDelete = ReferenceOption.CASCADE)
-    }
-
     override suspend fun getAll(): List<User> {
         val allUsers = dbQuery {
             (UsersTable innerJoin UserProfilesTable innerJoin AuthTable)
@@ -80,6 +63,7 @@ class UserRepository(database: Database) : RepositoryBase<User>(database, UserPr
     }
 
     override suspend fun getById(id: UUID): User? {
+        println(id)
         val idS = dbQuery {
             UsersTable
                 .select(idUser, UsersTable.idAuth, UsersTable.idProfile)
@@ -119,20 +103,36 @@ class UserRepository(database: Database) : RepositoryBase<User>(database, UserPr
             Pair(auth, uProfile)
         }
 
-        return User(authProfile.second, authProfile.first)
+
+        return User(authProfile.second, authProfile.first, id)
     }
 
     override suspend fun update(entity: User) {
+        val resultRow = dbQuery {
+            val resultRow = UsersTable
+                .select(UsersTable.idProfile, UsersTable.idAuth)
+                .where(idUser eq entity.id)
+
+            val idAuth = resultRow.map { it[UsersTable.idAuth] }.singleOrNull()
+            val idProfile = resultRow.map { it[UsersTable.idProfile] }.singleOrNull()
+
+            if (idAuth == null || idProfile == null) {
+                throw InsertDbError("Can not update unknown user with id ${entity.id}")
+            }
+
+            Pair(idProfile, idAuth)
+        }
+
+
         dbQuery {
-            val idAuthProfile = getAuthProfileId(entity)
-            UserProfilesTable.update({ UserProfilesTable.idProfile eq idAuthProfile.first }) {
+            UserProfilesTable.update({ UserProfilesTable.idProfile eq resultRow.first }) {
                 it[firstName] = entity.uProfile.firstName
                 it[secondName] = entity.uProfile.secondName
                 it[lastName] = entity.uProfile.lastName
                 it[age] = entity.uProfile.age
             }
 
-            AuthTable.update({ AuthTable.idAuth eq idAuthProfile.second }) {
+            AuthTable.update({ AuthTable.idAuth eq resultRow.second }) {
                 it[login] = entity.auth.login
                 it[hashPass] = entity.auth.hashPass
             }
@@ -140,9 +140,9 @@ class UserRepository(database: Database) : RepositoryBase<User>(database, UserPr
     }
 
     override suspend fun remove(entity: User) {
-        val idAuthProfile = getAuthProfileId(entity)
-        AuthTable.deleteWhere { idAuth eq idAuthProfile.second }
-        UserProfilesTable.deleteWhere { idProfile eq idAuthProfile.first }
+        dbQuery {
+            UsersTable.deleteWhere { idUser eq entity.id }
+        }
     }
 
     override suspend fun add(entity: User) {
@@ -165,20 +165,5 @@ class UserRepository(database: Database) : RepositoryBase<User>(database, UserPr
                 it[idProfile] = profileId
             }
         }
-    }
-
-    private suspend fun getAuthProfileId(entity: User): Pair<Int, Int> {
-        val resultRow = dbQuery {
-            val resultRow = UsersTable
-                .select(UsersTable.idProfile, UsersTable.idAuth)
-                .where(idUser eq entity.id)
-
-
-            val idAuth = resultRow.map { it[UsersTable.idAuth] }.single()
-            val idProfile = resultRow.map { it[UsersTable.idProfile] }.single()
-            Pair(idProfile, idAuth)
-        }
-
-        return resultRow
     }
 }

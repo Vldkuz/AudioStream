@@ -6,25 +6,23 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.util.*
 import io.ktor.utils.io.*
-import java.security.MessageDigest
 import kt.webDav.YandexFileManager.HashUtils.md5
 import kt.webDav.YandexFileManager.HashUtils.sha256
 import kt.webDav.YandexFileManager.WebDavSpecies
+import java.security.MessageDigest
 
 
-class YandexFileManager(private val token: String, private val client: HttpClient) : kt.webDav.IFileManager {
+class YandexFileManager(private val token: String, private val client: HttpClient) : IFileManager {
     object WebDavSpecies {
         const val SERVER = "webdav.yandex.ru"
         const val SHA_HEADER = "Sha256"
     }
 
     object HashUtils {
-        @OptIn(ExperimentalStdlibApi::class)
         fun ByteArray.md5(): String {
             return MessageDigest.getInstance("MD5").digest(this).toHexString()
         }
 
-        @OptIn(ExperimentalStdlibApi::class)
         fun ByteArray.sha256(): String {
             return MessageDigest.getInstance("SHA-256").digest(this).toHexString()
         }
@@ -106,7 +104,7 @@ class YandexFileManager(private val token: String, private val client: HttpClien
 }
 
 
-class YandexStorageManager(private val client: HttpClient, private val token: String) : kt.webDav.IStorageManager {
+class YandexStorageManager(private val client: HttpClient, private val token: String) : IStorageManager {
     override suspend fun getPropertiesFileFolder(path: String): HttpResponse {
         // Получаем свойства по-умолчанию, которые декларированы в доке
         // https://yandex.ru/dev/disk/doc/ru/reference/propfind-resource-properties
