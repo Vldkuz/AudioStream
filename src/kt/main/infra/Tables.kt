@@ -50,7 +50,7 @@ object UserProfilesTable : Table("userProfiles") {
 
 object AuthTable : Table("auth") {
     val idAuth = integer("id").autoIncrement()
-    val login = varchar("login", 20).uniqueIndex()
+    val login = varchar("login", 40).uniqueIndex()
     val hashPass = varchar("hashPass", 128)
 
     override val primaryKey = PrimaryKey(idAuth, name = "PK_Auth")
@@ -60,4 +60,6 @@ object UsersTable : Table("users") {
     val idUser = uuid("idUser")
     val idProfile = reference("idProfile", UserProfilesTable.idProfile, onDelete = ReferenceOption.CASCADE)
     val idAuth = reference("idAuth", AuthTable.idAuth, onDelete = ReferenceOption.CASCADE)
+
+    override val primaryKey = PrimaryKey(idUser, name = "PK_Users")
 }
