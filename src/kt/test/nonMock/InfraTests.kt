@@ -6,8 +6,11 @@ import io.ktor.util.*
 import kotlinx.coroutines.runBlocking
 import kt.main.core.*
 import kt.main.infra.*
+import kt.main.infra.repositories.RoomRepository
 import kt.main.infra.repositories.TrackRepository
 import kt.main.infra.repositories.UserRepository
+import kt.test.fakers.BaseFakeGenerator
+import kt.test.fakers.FakeRoomGenerator
 import kt.test.fakers.FakeTrackGenerator
 import kt.test.fakers.FakeUserGenerator
 import kt.webDav.YandexFileManager
@@ -15,6 +18,7 @@ import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.testng.AssertJUnit.assertEquals
+import org.testng.AssertJUnit.assertNull
 import org.testng.annotations.BeforeClass
 import org.testng.annotations.BeforeTest
 import org.testng.annotations.Test
@@ -201,6 +205,9 @@ class TrackRepositoryTest : BaseInfraTest() {
             trackRepository!!.getAll()
         }
 
+        println(allTracks.map { it -> it.id })
+        println(testTracks.map { it -> it.id })
+
         assertEquals(allTracks, testTracks)
     }
 
@@ -228,30 +235,70 @@ class TrackRepositoryTest : BaseInfraTest() {
         assertEquals(track, trackInDb)
     }
 
-    /*@Test
+    @Test
     fun testUpdate() {
-        val id = testTracks[0]
-
-        val rProfile = TProfile(
-            "Jostky Move",
-            "Slavik_1994",
+        val trackId = testTracks[0].id
+        val tProfile = TProfile (
+            "joskij move",
+            "slavik_1994",
+            testTracks[0].tProfile.uploader,
+            testTracks[0].tProfile.uploadDate,
+            null,
+            testTracks[0].tProfile.duration
         )
 
-        val auth = Auth(
-            "loginov",
-            "Biba023543"
-        )
-
-        val user = User(rProfile, auth, id)
+        val track = Track(tProfile, byteArrayOf(1, 2, 3, 4, 5), trackId)
 
         runBlocking {
-            userRepository!!.update(user)
+            trackRepository!!.update(track)
         }
 
-        val userInDb = runBlocking {
-            userRepository!!.getById(id)
+        val trackInDb = runBlocking {
+            trackRepository!!.getById(trackId)
         }
 
-        assertEquals(user, userInDb)
-    }*/
+        assertEquals(track, trackInDb)
+    }
+
+    @Test
+    fun testRemove() {
+        val track = testTracks[0]
+
+        runBlocking {
+            trackRepository!!.remove(track)
+        }
+
+        val trackInDb = runBlocking {
+            trackRepository!!.getById(track.id)
+        }
+
+        assertNull(trackInDb)
+    }
 }
+
+//TODO(Пофиксить кейсы в testUpdate, testGetById и testRemove)
+
+class RoomRepositoryTest : BaseInfraTest() {
+    private var roomRepository: RoomRepository? = null
+    private val testRoomsCount = 10
+    private val rooms = testRoomsList(testRoomsCount)
+
+
+    private fun testRoomsList(n: Int): List<Room> {
+        val rooms = LinkedList<Room>()
+        val faker = FakeRoomGenerator()
+
+        for (i in 0..n) {
+            rooms.add(faker.createInstance())
+        }
+        return rooms
+    }
+
+    @BeforeTest
+    fun setupDatabase() {
+        transaction(dbInstance) {
+        }
+    }
+}
+
+//TODO(Дописать RoomRepositoryTest)
