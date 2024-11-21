@@ -1,11 +1,9 @@
 package kt.main.infra.repositories
 
-import io.ktor.http.*
 import io.ktor.utils.io.*
 import kt.main.core.TProfile
 import kt.main.core.Track
 import kt.main.core.User
-import kt.main.infra.DownloadError
 import kt.main.infra.InsertDbError
 import kt.main.infra.TrackProfilesTable
 import kt.main.infra.TrackProfilesTable.nameTrack
@@ -137,10 +135,6 @@ class TrackRepository(database: Database, private val webDavImpl: IFileManager, 
 
         val httpResp = webDavImpl.download(row[path2Track])
 
-        if (httpResp.first.status != HttpStatusCode.OK) {
-            throw DownloadError("Can not upload track with ${row[idTrack]}")
-        }
-
-        return Track(profile, httpResp.second, row[idTrack])
+        return Track(profile, httpResp, row[idTrack])
     }
 }

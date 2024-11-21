@@ -5,10 +5,12 @@ import io.ktor.utils.io.*
 
 
 interface IFileManager {
-    suspend fun upload(path: String, data: ByteReadChannel): HttpResponse
-    suspend fun download(path: String): Pair<HttpResponse, ByteArray>
-    suspend fun delete(path: String): HttpResponse
+    suspend fun upload(path: String, data: ByteReadChannel)
+    suspend fun download(path: String): ByteArray
+    suspend fun delete(path: String)
 }
+
+// TODO(Проработать интерфейс для управления файловым хранилищем более глубоко, не отдавая HTTP Response)
 
 interface IStorageManager {
     suspend fun getPropertiesFileFolder(path: String): HttpResponse

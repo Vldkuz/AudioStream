@@ -32,7 +32,7 @@ class YandexFileManager(private val token: String, private val client: HttpClien
         }
     }
 
-    override suspend fun upload(path: String, data: ByteReadChannel): HttpResponse {
+    override suspend fun upload(path: String, data: ByteReadChannel) {
         val dataBytes = GZipEncoder.encode(data).toByteArray()
         val response = client.put {
             url {
@@ -56,10 +56,12 @@ class YandexFileManager(private val token: String, private val client: HttpClien
             setBody(dataBytes)
         }
 
-        return response
+        if (response.status != HttpStatusCode.Created) {
+            throw UploadError(response.bodyAsChannel().toString())
+        }
     }
 
-    override suspend fun download(path: String): Pair<HttpResponse, ByteArray> {
+    override suspend fun download(path: String): ByteArray {
         val response = client.get {
             url {
                 protocol = URLProtocol.HTTPS
@@ -81,11 +83,15 @@ class YandexFileManager(private val token: String, private val client: HttpClien
             response.bodyAsChannel().toByteArray()
         }
 
-        return Pair(response, data)
+        if (response.status != HttpStatusCode.OK) {
+            throw DownloadError(response.bodyAsChannel().toString())
+        }
+
+        return data
     }
 
 
-    override suspend fun delete(path: String): HttpResponse {
+    override suspend fun delete(path: String) {
         val response = client.delete {
             url {
                 protocol = URLProtocol.HTTPS
@@ -99,11 +105,15 @@ class YandexFileManager(private val token: String, private val client: HttpClien
             }
         }
 
-        return response
+        if (response.status != HttpStatusCode.OK) {
+            throw DeleteError(response.bodyAsChannel().toString())
+        }
     }
 }
 
 
+// TODO(Это не оттестировано, используйте на свой страх и риск)
+// TODO(Тестирование этого и использование будет, если понадобится конфиги хранилки менять (бэклог))
 class YandexStorageManager(private val client: HttpClient, private val token: String) : IStorageManager {
     override suspend fun getPropertiesFileFolder(path: String): HttpResponse {
         // Получаем свойства по-умолчанию, которые декларированы в доке
