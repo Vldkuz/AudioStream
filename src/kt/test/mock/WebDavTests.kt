@@ -35,8 +35,6 @@ import kt.webDav.YandexFileManager.HashUtils.md5
             MockConfiguration.PATH,
             ByteReadChannel(MockConfiguration.CONTENT)
         )
-
-        assertEquals(response.status, HttpStatusCode.Created)
     }
 
     @Test
@@ -55,10 +53,8 @@ import kt.webDav.YandexFileManager.HashUtils.md5
             kt.webDav.YandexFileManager(MockConfiguration.TOKEN, HttpClient(mockEngine))
 
         val downloaded = fileManagerInstance.download(MockConfiguration.PATH)
-        assertEquals(downloaded.first.headers[HttpHeaders.ETag], MockConfiguration.CONTENT.toByteArray().md5())
-        assertEquals(downloaded.first.status, HttpStatusCode.OK)
         assertEquals(
-            ByteReadChannel(downloaded.second).readUTF8Line(),
+            ByteReadChannel(downloaded).readUTF8Line(),
             MockConfiguration.CONTENT
         )
     }
@@ -79,9 +75,6 @@ import kt.webDav.YandexFileManager.HashUtils.md5
         val response = fileManagerInstance.delete(
             MockConfiguration.PATH
         )
-
-        assertEquals(response.status, HttpStatusCode.OK)
-        assertEquals(response.headers[HttpHeaders.ContentLength], "0")
     }
 }*/
 

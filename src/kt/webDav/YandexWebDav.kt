@@ -105,7 +105,7 @@ class YandexFileManager(private val token: String, private val client: HttpClien
             }
         }
 
-        if (response.status != HttpStatusCode.OK) {
+        if (response.status != HttpStatusCode.NoContent) {
             throw DeleteError(response.bodyAsChannel().toString())
         }
     }
