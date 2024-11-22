@@ -9,7 +9,6 @@ import kt.main.infra.*
 import kt.main.infra.repositories.RoomRepository
 import kt.main.infra.repositories.TrackRepository
 import kt.main.infra.repositories.UserRepository
-import kt.test.fakers.BaseFakeGenerator
 import kt.test.fakers.FakeRoomGenerator
 import kt.test.fakers.FakeTrackGenerator
 import kt.test.fakers.FakeUserGenerator
@@ -26,7 +25,7 @@ import java.util.*
 
 
 open class BaseInfraTest {
-    private val dbUser = System.getenv("TEST_USER")
+    private val dbUser = System.getenv("TEST_USER") // TODO(Надо в конфиг файл унести вот это)
     private val dbPassword = System.getenv("TEST_PASSWORD")
     private val dbUrl = System.getenv("TEST_DB_URL")
 
@@ -237,14 +236,14 @@ class TrackRepositoryTest : BaseInfraTest() {
 
     @Test
     fun testUpdate() {
-        val trackId = testTracks[0].id
+        val trackId = testTracks[1].id
         val tProfile = TProfile (
             "joskij move",
             "slavik_1994",
-            testTracks[0].tProfile.uploader,
-            testTracks[0].tProfile.uploadDate,
+            testTracks[1].tProfile.uploader,
+            testTracks[1].tProfile.uploadDate,
             null,
-            testTracks[0].tProfile.duration
+            testTracks[1].tProfile.duration
         )
 
         val track = Track(tProfile, byteArrayOf(1, 2, 3, 4, 5), trackId)

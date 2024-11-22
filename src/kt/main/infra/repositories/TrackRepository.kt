@@ -6,7 +6,6 @@ import kt.main.core.Track
 import kt.main.core.User
 import kt.main.infra.InsertDbError
 import kt.main.infra.TrackProfilesTable
-import kt.main.infra.TrackProfilesTable.nameTrack
 import kt.main.infra.TrackTable
 import kt.main.infra.TrackTable.idProfile
 import kt.main.infra.TrackTable.idTrack
@@ -23,7 +22,7 @@ class TrackRepository(database: Database, private val webDavImpl: IFileManager, 
             (TrackTable innerJoin TrackProfilesTable)
                 .select(
                     idTrack, idProfile, path2Track,
-                    nameTrack, TrackProfilesTable.author, TrackProfilesTable.uploader,
+                    TrackProfilesTable.nameTrack, TrackProfilesTable.author, TrackProfilesTable.uploader,
                     TrackProfilesTable.uploadDate, TrackProfilesTable.genre, TrackProfilesTable.duration
                 )
                 .map { row -> createTrackFromRow(row) }
@@ -37,10 +36,10 @@ class TrackRepository(database: Database, private val webDavImpl: IFileManager, 
             (TrackTable innerJoin TrackProfilesTable)
                 .select(
                     idTrack, idProfile, path2Track,
-                    nameTrack, TrackProfilesTable.author, TrackProfilesTable.uploader,
+                    TrackProfilesTable.nameTrack, TrackProfilesTable.author, TrackProfilesTable.uploader,
                     TrackProfilesTable.uploadDate, TrackProfilesTable.genre, TrackProfilesTable.duration
                 )
-                .where { nameTrack eq name }
+                .where { TrackProfilesTable.nameTrack eq name }
                 .map { row -> createTrackFromRow(row) }
         }
 
@@ -51,11 +50,11 @@ class TrackRepository(database: Database, private val webDavImpl: IFileManager, 
         val track = dbQuery {
             (TrackTable innerJoin TrackProfilesTable)
                 .select(
-                    idTrack, idProfile, path2Track,
-                    nameTrack, TrackProfilesTable.author, TrackProfilesTable.uploader,
+                    TrackTable.idTrack, TrackTable.idProfile, TrackTable.path2Track,
+                    TrackProfilesTable.nameTrack, TrackProfilesTable.author, TrackProfilesTable.uploader,
                     TrackProfilesTable.uploadDate, TrackProfilesTable.genre, TrackProfilesTable.duration
                 )
-                .where { idTrack eq idTrack }
+                .where { TrackTable.idTrack eq id}
                 .map { row -> createTrackFromRow(row) }
                 .singleOrNull()
         }
@@ -125,7 +124,7 @@ class TrackRepository(database: Database, private val webDavImpl: IFileManager, 
 
     private suspend fun createTrackFromRow(row: ResultRow): Track {
         val profile = TProfile(
-            row[nameTrack],
+            row[TrackProfilesTable.nameTrack],
             row[TrackProfilesTable.author],
             userRepos.getById(row[TrackProfilesTable.uploader]) as User,
             row[TrackProfilesTable.uploadDate],
