@@ -4,16 +4,13 @@ import kt.main.core.RProfile
 import kt.main.core.Room
 import kt.main.core.Track
 import kt.main.core.User
-import kt.main.infra.InsertDbError
-import kt.main.infra.RoomProfilesTable
+import kt.main.infra.*
 import kt.main.infra.RoomProfilesTable.description
 import kt.main.infra.RoomProfilesTable.roomName
-import kt.main.infra.RoomTable
 import kt.main.infra.RoomTable.idParticipants
 import kt.main.infra.RoomTable.idProfile
 import kt.main.infra.RoomTable.idRoom
 import kt.main.infra.RoomTable.idTracks
-import kt.main.infra.UserProfilesTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.util.*
@@ -25,54 +22,29 @@ class RoomRepository(
 ) : RepositoryBase<Room>(database, RoomProfilesTable, RoomTable) {
 
     override suspend fun getAll(): List<Room> {
-        val allRooms = dbQuery {
-            (RoomTable innerJoin RoomProfilesTable)
-                .select(
-                    idRoom, idProfile,
-                    idTracks, idParticipants, roomName,
-                    description
-                )
-                .map { row -> createRoomFromResultRow(row) }
-        }
-
-        return allRooms
+        return dbQuery {internalJoin().map { row -> createRoomFromResultRow(row)}}
     }
 
     override suspend fun getByName(name: String): List<Room> {
-        val result = dbQuery {
-            (RoomTable innerJoin UserProfilesTable)
-                .select(
-                    idRoom, idProfile,
-                    idTracks, idParticipants, roomName,
-                    description
-                )
-                .where { roomName eq name }
-                .map { row -> createRoomFromResultRow(row) }
-        }
-
-        return result
+        return dbQuery { internalJoin().where { roomName eq name }.map { row -> createRoomFromResultRow(row) }}
     }
 
     override suspend fun getById(id: UUID): Room? {
-        val result = dbQuery {
-            (RoomTable innerJoin RoomProfilesTable).select(
-                idRoom, idProfile,
-                idTracks, idParticipants, roomName,
-                description
-            )
-                .where { idRoom eq id }
-                .map { row -> createRoomFromResultRow(row) }
-        }
-
-        if (result.isEmpty())
-            return null
-
-        return result.first()
+        return dbQuery { internalJoin().where {idRoom eq id}.map {row -> createRoomFromResultRow(row)}.singleOrNull() }
     }
 
 
     override suspend fun update(entity: Room) {
-        val idRProfile = dbQuery { RoomTable.select(idProfile).where { idRoom eq entity.id }.single()[idProfile] }
+        val idRProfile = dbQuery {
+            RoomTable.select(idProfile)
+                .where { idRoom eq entity.id }
+                .map { row -> row[idProfile]}
+                .firstOrNull()
+        }
+
+        if (idRProfile == null) {
+            throw UpdateDbError("Can not update Room with unknown id ${entity.id}")
+        }
 
         dbQuery {
             RoomProfilesTable.update({ idProfile eq idRProfile }) {
@@ -120,6 +92,15 @@ class RoomRepository(
                 it[idTracks] = entity.trackQueue.map { it.id }
             }
         }
+    }
+
+    private fun internalJoin(): Query {
+        return (RoomTable innerJoin RoomProfilesTable)
+            .select(
+                idRoom, idProfile,
+                idTracks, idParticipants, roomName,
+                description
+            )
     }
 
     private suspend fun createRoomFromResultRow(row: ResultRow): Room {

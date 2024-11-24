@@ -1,7 +1,11 @@
 package kt.main.infra
 
-open class InfraExceptions : Exception()
+open class InfraExceptions(reason: String) : Exception(reason)
 
-class InsertDbError(private val reason: String) : InfraExceptions()
+class InsertDbError(reason: String) : InfraExceptions(reason)
 
-class DownloadError(private val reason: String) : InfraExceptions()
+class DownloadDbError(reason: String) : InfraExceptions(reason)
+
+class UpdateDbError(reason: String) : InfraExceptions(reason)
+
+class DeleteDbError(reason: String) : InfraExceptions(reason)

@@ -8,106 +8,28 @@ import kt.main.infra.InsertDbError
 import kt.main.infra.UserProfilesTable
 import kt.main.infra.UsersTable
 import kt.main.infra.UsersTable.idUser
-import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.update
 import java.util.*
 
 class UserRepository(database: Database) : RepositoryBase<User>(database, UserProfilesTable, AuthTable, UsersTable) {
     override suspend fun getAll(): List<User> {
-        val allUsers = dbQuery {
-            (UsersTable innerJoin UserProfilesTable innerJoin AuthTable)
-                .select(
-                    idUser, UserProfilesTable.firstName,
-                    UserProfilesTable.secondName, UserProfilesTable.lastName,
-                    UserProfilesTable.age, AuthTable.login, AuthTable.hashPass
-                )
-                .map { row ->
-                    val auth = Auth(row[AuthTable.login], row[AuthTable.hashPass])
-                    val uProfile = UProfile(
-                        row[UserProfilesTable.firstName],
-                        row[UserProfilesTable.secondName],
-                        row[UserProfilesTable.lastName],
-                        row[UserProfilesTable.age]
-                    )
-                    User(uProfile, auth, row[idUser])
-                }
-        }
-
-        return allUsers
+        return dbQuery { internalJoin().map { row -> createUserFromRow(row) } }
     }
 
     override suspend fun getByName(name: String): List<User> {
-        val usersByName = dbQuery {
-            (UsersTable innerJoin UserProfilesTable innerJoin AuthTable)
-                .select(
-                    idUser, UserProfilesTable.firstName,
-                    UserProfilesTable.secondName, UserProfilesTable.lastName,
-                    UserProfilesTable.age, AuthTable.login, AuthTable.hashPass
-                )
-                .where(UserProfilesTable.firstName eq name)
-                .map { row ->
-                    val auth = Auth(row[AuthTable.login], row[AuthTable.hashPass])
-                    val uProfile = UProfile(
-                        row[UserProfilesTable.firstName],
-                        row[UserProfilesTable.secondName],
-                        row[UserProfilesTable.lastName],
-                        row[UserProfilesTable.age]
-                    )
-                    User(uProfile, auth, row[idUser])
-                }
+        return dbQuery {
+            internalJoin().where(UserProfilesTable.firstName eq name) .map { row -> createUserFromRow(row) }
         }
-        return usersByName
     }
 
     override suspend fun getById(id: UUID): User? {
-        val idS = dbQuery {
-            UsersTable
-                .select(idUser, UsersTable.idAuth, UsersTable.idProfile)
-                .where { idUser eq id }
-                .map { row -> Pair(row[UsersTable.idProfile], row[UsersTable.idAuth]) }
-                .singleOrNull()
-        }
-
-        if (idS == null) {
-            return null
-        }
-
-        val authProfile = dbQuery {
-            val auth = AuthTable
-                .select(AuthTable.idAuth, AuthTable.login, AuthTable.hashPass)
-                .where { AuthTable.idAuth eq idS.second }
-                .map { row -> Auth(row[AuthTable.login], row[AuthTable.hashPass]) }
-                .single()
-
-            val uProfile = UserProfilesTable
-                .select(
-                    UserProfilesTable.idProfile,
-                    UserProfilesTable.firstName, UserProfilesTable.secondName,
-                    UserProfilesTable.lastName, UserProfilesTable.age
-                )
-                .where { UserProfilesTable.idProfile eq idS.first }
-                .map { row ->
-                    UProfile(
-                        row[UserProfilesTable.firstName],
-                        row[UserProfilesTable.secondName],
-                        row[UserProfilesTable.lastName],
-                        row[UserProfilesTable.age]
-                    )
-                }
-                .single()
-
-            Pair(auth, uProfile)
-        }
-
-
-        return User(authProfile.second, authProfile.first, id)
+        return dbQuery { internalJoin().where{ idUser eq id }.map { row -> createUserFromRow(row) }.singleOrNull() }
     }
 
     override suspend fun update(entity: User) {
-        val result = dbQuery {
+
+        val pairIdProfIdAuth = dbQuery {
             UsersTable
                 .select(UsersTable.idProfile, UsersTable.idAuth)
                 .where(idUser eq entity.id)
@@ -115,19 +37,19 @@ class UserRepository(database: Database) : RepositoryBase<User>(database, UserPr
                 .singleOrNull()
         }
 
-        if (result == null) {
+        if (pairIdProfIdAuth == null) {
             throw InsertDbError("Can not update unknown user with id ${entity.id}")
         }
 
         dbQuery {
-            UserProfilesTable.update({ UserProfilesTable.idProfile eq result.first }) {
+            UserProfilesTable.update({ UserProfilesTable.idProfile eq pairIdProfIdAuth!!.first }) {
                 it[firstName] = entity.uProfile.firstName
                 it[secondName] = entity.uProfile.secondName
                 it[lastName] = entity.uProfile.lastName
                 it[age] = entity.uProfile.age
             }
 
-            AuthTable.update({ AuthTable.idAuth eq result.second }) {
+            AuthTable.update({ AuthTable.idAuth eq pairIdProfIdAuth!!.second }) {
                 it[login] = entity.auth.login
                 it[hashPass] = entity.auth.hashPass
             }
@@ -160,5 +82,26 @@ class UserRepository(database: Database) : RepositoryBase<User>(database, UserPr
                 it[idProfile] = profileId
             }
         }
+    }
+
+    private fun internalJoin(): Query {
+        return (UsersTable innerJoin UserProfilesTable innerJoin AuthTable)
+            .select(
+                idUser, UserProfilesTable.firstName,
+                UserProfilesTable.secondName, UserProfilesTable.lastName,
+                UserProfilesTable.age, AuthTable.login, AuthTable.hashPass)
+    }
+
+    private fun createUserFromRow(row: ResultRow): User {
+        val auth = Auth(row[AuthTable.login], row[AuthTable.hashPass])
+
+        val uProfile = UProfile(
+            row[UserProfilesTable.firstName],
+            row[UserProfilesTable.secondName],
+            row[UserProfilesTable.lastName],
+            row[UserProfilesTable.age]
+        )
+
+        return User(uProfile, auth, row[idUser])
     }
 }

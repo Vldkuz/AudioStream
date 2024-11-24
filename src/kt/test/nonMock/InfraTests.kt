@@ -18,6 +18,7 @@ import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.testng.AssertJUnit.assertEquals
 import org.testng.AssertJUnit.assertNull
+import org.testng.annotations.AfterTest
 import org.testng.annotations.BeforeClass
 import org.testng.annotations.BeforeTest
 import org.testng.annotations.Test
@@ -56,7 +57,6 @@ class UserRepositoryTest : BaseInfraTest() {
     @BeforeClass
     fun setupDatabase() {
         transaction(dbInstance) {
-            SchemaUtils.drop(UsersTable, UserProfilesTable, AuthTable)
             userRepository = UserRepository(dbInstance)
         }
 
@@ -139,6 +139,13 @@ class UserRepositoryTest : BaseInfraTest() {
             assertEquals(null, userRepository!!.getById(id))
         }
     }
+
+    @AfterTest
+    fun dropAllAfterTests() {
+        transaction(dbInstance) {
+            SchemaUtils.drop(UsersTable, UserProfilesTable, AuthTable)
+        }
+    }
 }
 
 //TODO("Надо тесты еще дописать на TrackRepository, RoomRepository")
@@ -175,8 +182,6 @@ class TrackRepositoryTest : BaseInfraTest() {
     @BeforeTest
     fun setup() {
         transaction(dbInstance) {
-            SchemaUtils.drop(TrackTable, TrackProfilesTable)
-            SchemaUtils.drop(UsersTable, UserProfilesTable, AuthTable)
             userRepository = UserRepository(dbInstance)
             trackRepository = TrackRepository(
                 dbInstance,
@@ -273,9 +278,15 @@ class TrackRepositoryTest : BaseInfraTest() {
 
         assertNull(trackInDb)
     }
-}
 
-//TODO(Пофиксить кейсы в testUpdate, testGetById и testRemove)
+    @AfterTest
+    fun dropAllAfterTests() {
+        transaction(dbInstance) {
+            SchemaUtils.drop(TrackTable, TrackProfilesTable)
+            SchemaUtils.drop(UsersTable, UserProfilesTable, AuthTable)
+        }
+    }
+}
 
 class RoomRepositoryTest : BaseInfraTest() {
     private var roomRepository: RoomRepository? = null

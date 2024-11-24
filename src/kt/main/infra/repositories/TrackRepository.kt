@@ -4,94 +4,68 @@ import io.ktor.utils.io.*
 import kt.main.core.TProfile
 import kt.main.core.Track
 import kt.main.core.User
-import kt.main.infra.InsertDbError
-import kt.main.infra.TrackProfilesTable
-import kt.main.infra.TrackTable
+import kt.main.infra.*
 import kt.main.infra.TrackTable.idProfile
 import kt.main.infra.TrackTable.idTrack
 import kt.main.infra.TrackTable.path2Track
-import kt.webDav.IFileManager
+import kt.webDav.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.util.*
 
 class TrackRepository(database: Database, private val webDavImpl: IFileManager, private val userRepos: UserRepository) :
     RepositoryBase<Track>(database, TrackTable, TrackProfilesTable) {
-    override suspend fun getAll(): List<Track> {
-        val tracks = dbQuery {
-            (TrackTable innerJoin TrackProfilesTable)
-                .select(
-                    idTrack, idProfile, path2Track,
-                    TrackProfilesTable.nameTrack, TrackProfilesTable.author, TrackProfilesTable.uploader,
-                    TrackProfilesTable.uploadDate, TrackProfilesTable.genre, TrackProfilesTable.duration
-                )
-                .map { row -> createTrackFromRow(row) }
-        }
 
-        return tracks
+    override suspend fun getAll(): List<Track> {
+        return dbQuery { internalJoin().map { row -> createTrackFromRow(row) }}
     }
 
     override suspend fun getByName(name: String): List<Track> {
-        val tracks = dbQuery {
-            (TrackTable innerJoin TrackProfilesTable)
-                .select(
-                    idTrack, idProfile, path2Track,
-                    TrackProfilesTable.nameTrack, TrackProfilesTable.author, TrackProfilesTable.uploader,
-                    TrackProfilesTable.uploadDate, TrackProfilesTable.genre, TrackProfilesTable.duration
-                )
-                .where { TrackProfilesTable.nameTrack eq name }
-                .map { row -> createTrackFromRow(row) }
-        }
-
-        return tracks
+        return dbQuery { internalJoin().where { TrackProfilesTable.nameTrack eq name } .map { row -> createTrackFromRow(row) }}
     }
 
     override suspend fun getById(id: UUID): Track? {
-        val track = dbQuery {
-            (TrackTable innerJoin TrackProfilesTable)
-                .select(
-                    TrackTable.idTrack, TrackTable.idProfile, TrackTable.path2Track,
-                    TrackProfilesTable.nameTrack, TrackProfilesTable.author, TrackProfilesTable.uploader,
-                    TrackProfilesTable.uploadDate, TrackProfilesTable.genre, TrackProfilesTable.duration
-                )
-                .where { TrackTable.idTrack eq id}
-                .map { row -> createTrackFromRow(row) }
-                .singleOrNull()
-        }
-
-        return track
+        return dbQuery {internalJoin().where { idTrack eq id} .map { row -> createTrackFromRow(row) } .singleOrNull()}
     }
 
     override suspend fun update(entity: Track) {
-        webDavImpl.delete("${entity.id}")
-        webDavImpl.upload("${entity.id}", ByteReadChannel(entity.data))
+        try {
+            webDavImpl.delete("${entity.id}")
+            webDavImpl.upload("${entity.id}", ByteReadChannel(entity.data))
+        } catch (e: WebDavExceptions) {
+            throw UpdateDbError("Can not upload or delete entity with ID ${entity.id}\n Exception: ${e.message}")
+        }
 
-        val result = dbQuery {
+        val idProfile = dbQuery {
             TrackTable
                 .select(idProfile)
                 .where { idTrack eq entity.id }
+                .map { it[idProfile] }
                 .singleOrNull()
         }
 
-        if (result == null) {
+        if (idProfile == null) {
             throw InsertDbError("Can not update unknown track ${entity.id}")
         }
 
         dbQuery {
-            TrackProfilesTable.update({ TrackProfilesTable.idProfile eq result[idProfile] }) {
-                it[nameTrack] = entity.tProfile.name
+            TrackProfilesTable.update({ TrackProfilesTable.idProfile eq idProfile}) {
                 it[author] = entity.tProfile.author
+                it[nameTrack] = entity.tProfile.name
                 it[uploader] = entity.tProfile.uploader.id
                 it[uploadDate] = entity.tProfile.uploadDate
                 it[genre] = entity.tProfile.genre
                 it[duration] = entity.tProfile.duration
             }
         }
-
     }
 
     override suspend fun remove(entity: Track) {
-        webDavImpl.delete("${entity.id}")
+        try {
+            webDavImpl.delete("${entity.id}")
+        } catch (e: DeleteError) {
+            throw DeleteDbError("Can not delete entity with ID ${entity.id}\n Exception: ${e.message}")
+        }
 
         dbQuery {
             TrackTable.deleteWhere { idTrack eq entity.id }
@@ -100,7 +74,13 @@ class TrackRepository(database: Database, private val webDavImpl: IFileManager, 
 
     override suspend fun add(entity: Track) {
         val path = "${entity.id}"
-        webDavImpl.upload(path, ByteReadChannel(entity.data))
+
+        try {
+            webDavImpl.upload(path, ByteReadChannel(entity.data))
+        } catch (e: UploadError) {
+            throw InsertDbError("Can not upload unknown track ${entity.id} Exception: ${e.message}")
+        }
+
 
         val idRProfile = dbQuery {
             TrackProfilesTable.insert {
@@ -122,6 +102,14 @@ class TrackRepository(database: Database, private val webDavImpl: IFileManager, 
         }
     }
 
+    private fun internalJoin(): Query {
+        return (TrackTable innerJoin TrackProfilesTable)
+                .select(
+                    idTrack, idProfile, path2Track,
+                    TrackProfilesTable.nameTrack, TrackProfilesTable.author, TrackProfilesTable.uploader,
+                    TrackProfilesTable.uploadDate, TrackProfilesTable.genre, TrackProfilesTable.duration)
+    }
+
     private suspend fun createTrackFromRow(row: ResultRow): Track {
         val profile = TProfile(
             row[TrackProfilesTable.nameTrack],
@@ -132,8 +120,12 @@ class TrackRepository(database: Database, private val webDavImpl: IFileManager, 
             row[TrackProfilesTable.duration]
         )
 
-        val httpResp = webDavImpl.download(row[path2Track])
+        val data = try {
+            webDavImpl.download(row[path2Track])
+        } catch (e: DownloadError) {
+            throw DownloadDbError("Can not download track with id ${row[idTrack]}\n Exception: ${e.message}")
+        }
 
-        return Track(profile, httpResp, row[idTrack])
+        return Track(profile, data, row[idTrack])
     }
 }
