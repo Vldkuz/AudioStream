@@ -25,7 +25,7 @@ open class BaseTestUserWithID(
     age: Int?,
     login: String,
     password: String,
-    id: UUID?
+    id: UUID
 ) : User(
     UProfile(firstName, secondName, lastName, age),
     Auth(
@@ -42,7 +42,7 @@ open class BaseTestUserWithoutID(
     age: Int?,
     login: String,
     password: String,
-) : BaseTestUserWithID(firstName, secondName, lastName, age, login, password, null)
+) : BaseTestUserWithID(firstName, secondName, lastName, age, login, password, UUID.randomUUID())
 
 class TestUserWithRestoredId : BaseTestUserWithID(
     "VovanWithGlasses",

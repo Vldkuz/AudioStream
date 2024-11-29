@@ -4,8 +4,8 @@ import java.util.*
 
 // В остальном доменная область будет допиливаться по необходимости
 
-abstract class Entity(id: UUID? = null) {
-    val id: UUID = id ?: UUID.randomUUID()
+abstract class Entity {
+    abstract val id: UUID
 
     override fun equals(other: Any?): Boolean {
         return other is Entity && id == other.id

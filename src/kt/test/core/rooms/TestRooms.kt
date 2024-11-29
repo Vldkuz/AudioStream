@@ -12,7 +12,7 @@ open class BaseTestRoomsWithID(
     desc: String,
     participants: MutableSet<User>,
     tracks: Queue<Track>,
-    id: UUID? = null
+    id: UUID
 ) : Room(RProfile(name, desc), participants, tracks, id)
 
 open class BaseTestRoomsWithoutID(
@@ -20,7 +20,7 @@ open class BaseTestRoomsWithoutID(
     desc: String,
     participants: MutableSet<User>,
     tracks: Queue<Track>,
-) : BaseTestRoomsWithID(name, desc, participants, tracks, null)
+) : BaseTestRoomsWithID(name, desc, participants, tracks, UUID.randomUUID())
 
 class TestRoomWithRestoredID : BaseTestRoomsWithID(
     "CoolRoom",

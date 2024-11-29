@@ -42,15 +42,15 @@ class UserRepository(database: Database) : RepositoryBase<User>(database, UserPr
         }
 
         dbQuery {
-            UserProfilesTable.update({ UserProfilesTable.idProfile eq pairIdProfIdAuth!!.first }) {
+            UserProfilesTable.update({ UserProfilesTable.idProfile eq pairIdProfIdAuth.first }) {
                 it[firstName] = entity.uProfile.firstName
                 it[secondName] = entity.uProfile.secondName
                 it[lastName] = entity.uProfile.lastName
                 it[age] = entity.uProfile.age
             }
 
-            AuthTable.update({ AuthTable.idAuth eq pairIdProfIdAuth!!.second }) {
-                it[login] = entity.auth.login
+            AuthTable.update({ AuthTable.idAuth eq pairIdProfIdAuth.second }) {
+                it[login] = entity.auth!!.login
                 it[hashPass] = entity.auth.hashPass
             }
         }
@@ -72,7 +72,7 @@ class UserRepository(database: Database) : RepositoryBase<User>(database, UserPr
             } get UserProfilesTable.idProfile
 
             val authId = AuthTable.insert {
-                it[login] = entity.auth.login
+                it[login] = entity.auth!!.login
                 it[hashPass] = entity.auth.hashPass
             } get AuthTable.idAuth
 

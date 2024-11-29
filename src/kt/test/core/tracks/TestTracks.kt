@@ -16,7 +16,7 @@ open class BaseTestTrackWithId(
     uploadDate: DateTime,
     genre: String?,
     duration: Duration,
-    id: UUID? = null,
+    id: UUID,
 ) : Track(TProfile(
     name,
     author,
@@ -43,4 +43,5 @@ class  TestTrackWithRandomId : BaseTestTrackWithId (
     DateTime(),
     "Metalcore",
     Duration.ofSeconds(266),
+    UUID.randomUUID()
 )

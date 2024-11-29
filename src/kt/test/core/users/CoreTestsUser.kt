@@ -69,14 +69,14 @@ class CoreTestsUser {
     fun testLogins() {
         val listLogins =
             listOf("sidoroff", "Popovka", "JebkoTheBest", "petrr", "pavelDurovYa", "VanyaPupZemli", "UPPERCASELOGIN")
-        val gotListLogins = getSetupList().map { user -> user.auth.login }
+        val gotListLogins = getSetupList().map { user -> user.auth!!.login }
         assertEquals(listLogins, gotListLogins)
     }
 
     @Test
     fun testOneHashAfterRecreate() {
-        val oldHash = TestUserWithAllFields().auth.hashPass
-        val newHash = TestUserWithAllFields().auth.hashPass
+        val oldHash = TestUserWithAllFields().auth!!.hashPass
+        val newHash = TestUserWithAllFields().auth!!.hashPass
 
         assertEquals(oldHash, newHash)
     }
@@ -90,7 +90,7 @@ class CoreTestsUser {
             "30452ddb1eacc38932df941d0dc91bb8"
         )
 
-        val gotListHashes = getSetupList().map { user -> user.auth.hashPass }
+        val gotListHashes = getSetupList().map { user -> user.auth!!.hashPass }
         assertEquals(listHashes, gotListHashes)
     }
 
