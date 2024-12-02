@@ -14,7 +14,7 @@ data class UProfile(
     val age: Int? = null
 )
 
-
+@Serializable
 data class Auth(
     val login: String,
     val hashPass: String
