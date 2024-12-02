@@ -2,6 +2,7 @@ package kt.main.infra
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.Serializer
 import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.CompositeDecoder
 import kotlinx.serialization.encoding.Decoder
@@ -13,6 +14,7 @@ import org.joda.time.DateTime
 import java.time.Duration
 import java.util.*
 
+@Serializer(forClass = UUID::class)
 object UUIDSerializer : KSerializer<UUID> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("UUID", PrimitiveKind.STRING)
 
@@ -26,6 +28,7 @@ object UUIDSerializer : KSerializer<UUID> {
 
 }
 
+@Serializer(forClass = DateTime::class)
 object DateTimeSerializer : KSerializer<DateTime> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("DateTime", PrimitiveKind.STRING)
 
@@ -38,6 +41,7 @@ object DateTimeSerializer : KSerializer<DateTime> {
     }
 }
 
+@Serializer(forClass = Duration::class)
 object DurationSerializer : KSerializer<Duration> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("Duration", PrimitiveKind.STRING)
 
@@ -50,11 +54,12 @@ object DurationSerializer : KSerializer<Duration> {
     }
 }
 
+@Serializer(forClass = User::class)
 object UserSerializer : KSerializer<User> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("User") {
-        element<UProfile>("UProfile")
-        element<UUID>("UUID")
-        element<Auth>("Auth")
+        element<UProfile>("uProfile")
+        element<String>("id")
+        element<Auth>("auth")
     }
 
     override fun deserialize(decoder: Decoder): User {
