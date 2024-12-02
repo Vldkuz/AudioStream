@@ -39,7 +39,8 @@ class TestTrackForSerialization():
 
 
 class SerializationRoom {
-    private val jsonString = "{\"rProfile\":{\"name\":\"CoolRoom\",\"description\":\"We love pop and rock\"},\"participants\":[{\"uProfile\":{\"firstName\":\"VovanWithGlasses\",\"secondName\":\"Biba\",\"lastName\":\"Popovich\",\"age\":22},\"id\":\"1c05c129-bfa2-466c-9b4c-896237749385\"}],\"id\":\"9771a0b7-3827-475d-8b2e-be4af53ab84b\"}"
+    private val jsonString = """{"rProfile":{"name":"CoolRoom","description":"We love pop and rock"},"participants":[{"uProfile":{"firstName":"VovanWithGlasses","secondName":"Biba","lastName":"Popovich","age":22},"id":"1c05c129-bfa2-466c-9b4c-896237749385"}],"id":"9771a0b7-3827-475d-8b2e-be4af53ab84b"}"""
+    private val jsonDeserialization = """{"rProfile":{"name":"CoolRoom","description":"We love pop and rock"},"participants":[{"uProfile":{"firstName":"VovanWithGlasses","secondName":"Biba","lastName":"Popovich","age":22},"auth":{"login":"Popovka","hashPass":"c2e55e75e592023cdcbe029816c14e07"},"id":"1c05c129-bfa2-466c-9b4c-896237749385"}],"id":"9771a0b7-3827-475d-8b2e-be4af53ab84b"}"""
 
     @Test
     fun testRoomSerialization() {
@@ -50,13 +51,14 @@ class SerializationRoom {
 
     @Test
     fun testRoomDeserialization() {
-        assertEquals(Json.decodeFromString<Room>(jsonString), TestRoomForSerialization())
+        assertEquals(Json.decodeFromString<Room>(jsonDeserialization), TestRoomForSerialization())
     }
 }
 
 
 class SerializationTrack {
-    private val jsonString = "{\"tProfile\":{\"name\":\"Californication\",\"author\":\"Red Hot Chili Peppers\",\"uploader\":{\"uProfile\":{\"firstName\":\"VovanWithGlasses\",\"secondName\":\"Biba\",\"lastName\":\"Popovich\",\"age\":22},\"id\":\"1c05c129-bfa2-466c-9b4c-896237749385\"},\"uploadDate\":\"2024-11-12T13:11:00.000+05:00\",\"genre\":\"Alternative\",\"duration\":\"PT30S\"},\"data\":[],\"id\":\"dd5e0c5f-0707-406e-b0e8-c51c6cfb3728\"}"
+    private val jsonString = """{"tProfile":{"name":"Californication","author":"Red Hot Chili Peppers","uploader":{"uProfile":{"firstName":"VovanWithGlasses","secondName":"Biba","lastName":"Popovich","age":22},"id":"1c05c129-bfa2-466c-9b4c-896237749385"},"uploadDate":"2024-11-12T13:11:00.000+05:00","genre":"Alternative","duration":"PT30S"},"data":[],"id":"dd5e0c5f-0707-406e-b0e8-c51c6cfb3728"}"""
+    private val jsonDeserialization = """{"tProfile":{"name":"Californication","author":"Red Hot Chili Peppers","uploader":{"uProfile":{"firstName":"VovanWithGlasses","secondName":"Biba","lastName":"Popovich","age":22},"auth":{"login":"Popovka","hashPass":"c2e55e75e592023cdcbe029816c14e07"},"id":"1c05c129-bfa2-466c-9b4c-896237749385"},"uploadDate":"2024-11-12T13:11:00.000+05:00","genre":"Alternative","duration":"PT30S"},"data":[],"id":"dd5e0c5f-0707-406e-b0e8-c51c6cfb3728"}"""
 
     @Test
     fun testTrackSerialization() {
@@ -67,7 +69,7 @@ class SerializationTrack {
 
     @Test
     fun testTrackDeserialization() {
-        assertEquals(Json.decodeFromString<Track>(jsonString), TestTrackForSerialization())
+        assertEquals(Json.decodeFromString<Track>(jsonDeserialization), TestTrackForSerialization())
     }
 }
 
