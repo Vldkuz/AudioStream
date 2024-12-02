@@ -9,6 +9,7 @@ import kt.main.infra.*
 import kt.main.infra.repositories.RoomRepository
 import kt.main.infra.repositories.TrackRepository
 import kt.main.infra.repositories.UserRepository
+import kt.test.TestConfigs
 import kt.test.fakers.FakeRoomGenerator
 import kt.test.fakers.FakeTrackGenerator
 import kt.test.fakers.FakeUserGenerator
@@ -26,15 +27,11 @@ import java.util.*
 
 
 open class BaseInfraTest {
-    private val dbUser = System.getenv("TEST_USER") // TODO(Надо в конфиг файл унести вот это)
-    private val dbPassword = System.getenv("TEST_PASSWORD")
-    private val dbUrl = System.getenv("TEST_DB_URL")
+    private val config = TestConfigs()
 
     protected val dbInstance = Database.connect(
-        dbUrl, user = dbUser, password = dbPassword,
+        config.dbUrl, user = config.dbUser, password = config.dbPassword,
     )
-
-    private val httpClient = HttpClient(CIO)
 }
 
 
