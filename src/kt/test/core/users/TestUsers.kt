@@ -9,6 +9,10 @@ import java.util.*
 object TestCryptWrapper {
     private val cryptPasswords = MessageDigest.getInstance("MD5")
 
+    private fun ByteArray.toHexString(): String {
+        return joinToString(separator = "") { eachByte -> "%02x".format(eachByte) }
+    }
+
     @OptIn(ExperimentalStdlibApi::class)
     fun digest(bytes: ByteArray): String {
         cryptPasswords.reset()

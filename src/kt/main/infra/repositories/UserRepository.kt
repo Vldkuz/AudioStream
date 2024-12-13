@@ -84,6 +84,18 @@ class UserRepository(database: Database) : RepositoryBase<User>(database, UserPr
         }
     }
 
+    suspend fun checkAuth(auth: Auth): Boolean {
+        val hashPass =  dbQuery {
+                 AuthTable
+                .select(AuthTable.hashPass)
+                .where(AuthTable.login eq auth.login)
+                .map { row -> row[AuthTable.hashPass] }
+                .singleOrNull()
+        }
+
+        return hashPass == auth.hashPass
+    }
+
     private fun internalJoin(): Query {
         return (UsersTable innerJoin UserProfilesTable innerJoin AuthTable)
             .select(

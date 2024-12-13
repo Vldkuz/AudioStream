@@ -27,7 +27,12 @@
 
     <build>
         <sourceDirectory>src</sourceDirectory>
-        <testSourceDirectory>src/kt/</testSourceDirectory>
+        <testSourceDirectory>src/kt/test</testSourceDirectory>
+        <resources>
+            <resource>
+                <directory>src/kt/resources</directory>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
@@ -131,6 +136,28 @@
             <version>0.56.0</version>
         </dependency>
         <dependency>
+            <groupId>com.github.salomonbrys.kodein</groupId>
+            <artifactId>kodein</artifactId>
+            <version>4.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.ktor</groupId>
+            <artifactId>ktor-server-content-negotiation-jvm</artifactId>
+            <version>${ktor_version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.ktor</groupId>
+            <artifactId>ktor-server-netty-jvm</artifactId>
+            <version>${ktor_version}</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/io.ktor/ktor-server-config-yaml-jvm -->
+        <dependency>
+            <groupId>io.ktor</groupId>
+            <artifactId>ktor-server-config-yaml-jvm</artifactId>
+            <version>3.0.2</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
             <groupId>org.jetbrains.exposed</groupId>
             <artifactId>exposed-jdbc</artifactId>
             <version>0.56.0</version>
@@ -202,7 +229,22 @@
             <artifactId>ktor-serialization-kotlinx-json-jvm</artifactId>
             <version>${ktor_version}</version>
         </dependency>
-
+        <!-- https://mvnrepository.com/artifact/io.insert-koin/koin-ktor -->
+        <dependency>
+            <groupId>io.insert-koin</groupId>
+            <artifactId>koin-ktor</artifactId>
+            <version>4.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.ktor</groupId>
+            <artifactId>ktor-server-auth-jvm</artifactId>
+            <version>${ktor_version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.ktor</groupId>
+            <artifactId>ktor-server-auth-jwt-jvm</artifactId>
+            <version>${ktor_version}</version>
+        </dependency>
     </dependencies>
 
 </project>

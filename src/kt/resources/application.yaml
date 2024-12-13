@@ -1,0 +1,11 @@
+ktor:
+  deployment:
+    port: 8080
+
+  application:
+    modules:
+      - kt.main.api.UserRestKt.userRestAPI
+
+jwt:
+  secret: "secret"
+  realm: "Access to 'hello'"
