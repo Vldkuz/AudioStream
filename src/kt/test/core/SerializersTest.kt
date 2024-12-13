@@ -75,7 +75,7 @@ class SerializationTrack {
 
 class SerializerUser {
     private val jsonString = """{"uProfile":{"firstName":"VovanWithGlasses","secondName":"Biba","lastName":"Popovich","age":22},"id":"1c05c129-bfa2-466c-9b4c-896237749385"}"""
-    private val jsonDeserialization = """{"uProfile":{"firstName":"VovanWithGlasses","secondName":"Biba","lastName":"Popovich","age": 22},"auth":{"login":"Popovka","hashPass":"c2e55e75e592023cdcbe029816c14e07"},"id":"1c05c129-bfa2-466c-9b4c-896237749385"}"""
+    private val jsonDeserialization = """{"uProfile":{"firstName":"VovanWithGlasses","secondName":"Biba","lastName":"Popovich","age": 22},"auth":{"login":"Popovka","hashPass":"c2e55e75e592023cdcbe029816c14e07"}}"""
 
     @Test
     fun testUserSerialization() {

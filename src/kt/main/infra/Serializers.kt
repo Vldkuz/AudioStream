@@ -58,7 +58,7 @@ object DurationSerializer : KSerializer<Duration> {
 object UserSerializer : KSerializer<User> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("User") {
         element<UProfile>("uProfile")
-        element<String>("id")
+        element<String>("id", isOptional = true)
         element<Auth>("auth")
     }
 
@@ -72,7 +72,6 @@ object UserSerializer : KSerializer<User> {
         while (true) {
             when (val index = input.decodeElementIndex(descriptor)) {
                 0 -> uProfile = input.decodeSerializableElement(descriptor, 0, UProfile.serializer())
-                1 -> id = input.decodeSerializableElement(descriptor, 1, UUIDSerializer)
                 2 -> auth = input.decodeSerializableElement(descriptor, 2, Auth.serializer())
                 CompositeDecoder.DECODE_DONE -> break
             }
@@ -83,7 +82,6 @@ object UserSerializer : KSerializer<User> {
         return User(
             uProfile ?: throw SerializationException("Missing uProfile value"),
             auth,
-            id ?: throw SerializationException("Missing id value")
         )
     }
 
