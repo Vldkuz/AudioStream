@@ -3,6 +3,7 @@ package kt.main.api
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
+import io.ktor.util.collections.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -13,54 +14,42 @@ import kt.main.utils.WebSocketSessionHandler
 import java.util.UUID
 
 object WebSocketApi {
-    fun Application.configureWebSocketRoutes() {
-        install(WebSockets)
 
-        routing {
-            webSocket("") {
-                val sessionUUID = call.parameters["sessionUUID"] ?: return@webSocket close(
-                    CloseReason(CloseReason.Codes.CANNOT_ACCEPT, "UUID missed")
-                )
-                WebSocketSessionManager.createSession(UUID.fromString(sessionUUID), this)
-            }
-        }
-
-        suspend fun closeSession(sessionUUID: UUID) {
-            WebSocketSessionManager.closeSession(sessionUUID)
-        }
-    }
 }
 
 object WebSocketSessionManager {
-    private val sessions = mutableMapOf<UUID, WebSocketSessionHandler>()
-    private val mutex = Mutex()
+    private val sessions = ConcurrentMap<UUID, WebSocketSessionHandler>()
 
-    suspend fun createSession(sessionUUID: UUID, session: DefaultWebSocketServerSession) {
-        mutex.withLock {
-            if (sessions.containsKey(sessionUUID)) {
-                return
-            }
+    fun Routing.addWebSocketHandler(sessionUUID: UUID) {
+        val sessionPath = "/session/$sessionUUID"
 
-            val handler = WebSocketSessionHandler()
-            sessions[sessionUUID] = handler
+        webSocket(sessionPath) {
+            createSession(sessionUUID, this)
+        }
+    }
 
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    handler.handleSession(session)
-                } finally {
-                    closeSession(sessionUUID)
-                }
+    private fun createSession(sessionUUID: UUID, session: DefaultWebSocketServerSession) {
+        if (sessions.containsKey(sessionUUID)) {
+            return
+        }
+
+        val handler = WebSocketSessionHandler()
+        sessions[sessionUUID] = handler
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                handler.handleSession(session)
+            } finally {
+                closeSession(sessionUUID)
             }
         }
     }
 
-    suspend fun closeSession(sessionUUID: UUID) {
-        mutex.withLock {
-            sessions.remove(sessionUUID)
-        }
+    private fun closeSession(sessionUUID: UUID) {
+        sessions.remove(sessionUUID)
     }
 
-    suspend fun getSession(sessionUUID: UUID): WebSocketSessionHandler? {
-        return mutex.withLock { sessions[sessionUUID] }
+    fun getSession(sessionUUID: UUID): WebSocketSessionHandler? {
+        return sessions[sessionUUID]
     }
 }
