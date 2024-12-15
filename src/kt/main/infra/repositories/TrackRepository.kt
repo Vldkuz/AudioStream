@@ -13,7 +13,7 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.util.*
 
-class TrackRepository(database: Database, private val webDavImpl: IFileManager, private val userRepos: UserRepository) :
+class TrackRepository(database: Database, private val webDavImpl: IFileManager, private val userRepos: IDataRepository<User>) :
     RepositoryBase<Track>(database, TrackTable, TrackProfilesTable) {
 
     override suspend fun getAll(): List<Track> {

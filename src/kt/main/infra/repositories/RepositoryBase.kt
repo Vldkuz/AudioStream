@@ -21,3 +21,4 @@ abstract class RepositoryBase<T>(database: Database, vararg tables: Table) : IDa
         newSuspendedTransaction(Dispatchers.IO) { block() }
 }
 
+

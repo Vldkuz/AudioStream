@@ -11,8 +11,10 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kt.main.core.UProfile
 import kt.main.core.User
-import kt.main.infra.repositories.UserRepository
+import kt.main.infra.IAuthCheck
+import kt.main.infra.IDataRepository
 import kt.main.utils.AuthForm
 import kt.main.utils.CredentialsFormer
 import org.koin.ktor.ext.inject
@@ -21,7 +23,9 @@ import java.util.*
 fun Application.userRestAPI() {
     val secret = environment.config.property("jwt.secret").getString()
     val authJWTName = "auth-jwt"
-    val userRepository by inject<UserRepository>()
+
+    val userRepository by inject<IDataRepository<User>>()
+    val authRepository by inject<IAuthCheck>()
 
     install(ContentNegotiation) {
         json()
@@ -58,8 +62,8 @@ fun Application.userRestAPI() {
                 get { call.respond(userRepository.getAll()) }
 
                 get("/byName/{name}") {
-                    val nameUser = call.parameters["name"]
-                    call.respond(userRepository.getByName(nameUser!!))
+                    val nameUser = call.parameters["name"].orEmpty()
+                    call.respond(userRepository.getByName(nameUser))
                 }
 
                 get("/byId/{id}") {
@@ -67,6 +71,77 @@ fun Application.userRestAPI() {
                     val user = userRepository.getById(idUser)
                     val users = listOf(user)
                     call.respond(users)
+                }
+
+
+                put("/update/auth/{id}") {
+                    val id = UUID.fromString(call.parameters["id"].orEmpty())
+                    val newAuth = call.receive<AuthForm>()
+                    val principal = call.principal<JWTPrincipal>()
+                    val loginPrincipal = principal?.payload?.getClaim("username")?.asString()
+
+                    when (val userInDb = userRepository.getById(id)) {
+                        null -> call.respond(HttpStatusCode.NotFound)
+                        else -> {
+                            val loginUser = userInDb.auth?.login
+
+                            when (loginUser) {
+                                loginPrincipal -> {
+                                    val auth = CredentialsFormer.form2Auth(newAuth)
+                                    val newUser = User(userInDb.uProfile, auth, userInDb.id)
+                                    userRepository.update(newUser)
+                                    call.respond(HttpStatusCode.OK)
+                                }
+
+                                else -> call.respond(HttpStatusCode.Forbidden)
+                            }
+
+                        }
+                    }
+                }
+
+                put("/update/profile/{id}") {
+                    val id = UUID.fromString(call.parameters["id"].orEmpty())
+                    val newProfile = call.receive<UProfile>()
+                    val principal = call.principal<JWTPrincipal>()
+                    val loginPrincipal = principal?.payload?.getClaim("username")?.asString()
+
+                    when (val userInDb = userRepository.getById(id)) {
+                        null -> call.respond(HttpStatusCode.NotFound)
+                        else -> {
+                            val loginUser = userInDb.auth?.login
+
+                            when (loginUser) {
+                                loginPrincipal -> {
+                                    val newUser = User(newProfile, userInDb.auth, userInDb.id)
+                                    userRepository.update(newUser)
+                                    call.respond(HttpStatusCode.OK)
+                                }
+
+                                else -> call.respond(HttpStatusCode.Forbidden)
+                            }
+                        }
+                    }
+                }
+                delete("/remove/{id}") {
+                    val id = UUID.fromString(call.parameters["id"])
+
+                    when (val userInDb = userRepository.getById(id)) {
+                        null -> call.respond(HttpStatusCode.NotFound)
+                        else -> {
+                            val jwt = call.principal<JWTPrincipal>()
+                            val loginPrincipal = jwt!!.payload.getClaim("username").asString()
+                            val login = userInDb.auth!!.login
+                            when (loginPrincipal) {
+                                login -> {
+                                    userRepository.remove(userInDb)
+                                    call.respond(HttpStatusCode.OK)
+                                }
+
+                                else -> call.respond(HttpStatusCode.Forbidden)
+                            }
+                        }
+                    }
                 }
             }
 
@@ -83,62 +158,20 @@ fun Application.userRestAPI() {
             post("/login") {
                 val auth = CredentialsFormer.form2Auth(call.receive<AuthForm>())
 
-                when(userRepository.checkAuth(auth)) {
+                when (authRepository.checkAuth(auth)) {
                     true -> {
                         val token = JWT.create()
-                        .withClaim("username", auth.login)
-                        .withExpiresAt(Date(System.currentTimeMillis() + 60000))
-                        .sign(Algorithm.HMAC256(secret))
+                            .withClaim("username", auth.login)
+                            .withExpiresAt(Date(System.currentTimeMillis() + 3600000))
+                            .sign(Algorithm.HMAC256(secret))
                         call.respond(hashMapOf("token" to token))
                     }
 
                     else -> call.respond(HttpStatusCode.Unauthorized)
                 }
             }
-            }
-
-            authenticate(authJWTName) {
-                put("/update/{id}") {
-                    val id = UUID.fromString(call.parameters["id"])
-                    val updatedUser = call.receive<User>()
-                    val principal = call.principal<JWTPrincipal>()
-                    val loginPrincipal = principal!!.payload.getClaim("username").asString()
-
-                    when(val userInDb = userRepository.getById(id)) {
-                        null -> call.respond(HttpStatusCode.NotFound)
-                        else -> {
-                            val loginUser = userInDb.auth!!.login
-
-                            when (loginUser) {
-                                loginPrincipal -> {
-                                    userRepository.update(updatedUser)
-                                }
-
-                                else -> call.respond(HttpStatusCode.Forbidden)
-                            }
-                        }
-                }
-            }
-                delete("/remove/{id}") {
-                    val id = UUID.fromString(call.parameters["id"])
-
-                    when(val userInDb = userRepository.getById(id)) {
-                        null -> call.respond(HttpStatusCode.NotFound)
-                        else -> {
-                            val jwt = call.principal<JWTPrincipal>()
-                            val loginPrincipal = jwt!!.payload.getClaim("username").asString()
-                            val login = userInDb.auth!!.login
-                            when(loginPrincipal) {
-                                login -> {
-                                    userRepository.remove(userInDb)
-                                    call.respond(HttpStatusCode.OK)
-                                }
-                                else -> call.respond(HttpStatusCode.Forbidden)
-                            }
-                        }
-                    }
-                }
         }
-    }
 
+
+    }
 }

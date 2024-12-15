@@ -58,7 +58,7 @@ class SerializationRoom {
 
 class SerializationTrack {
     private val jsonString = """{"tProfile":{"name":"Californication","author":"Red Hot Chili Peppers","uploader":{"uProfile":{"firstName":"VovanWithGlasses","secondName":"Biba","lastName":"Popovich","age":22},"id":"1c05c129-bfa2-466c-9b4c-896237749385"},"uploadDate":"2024-11-12T13:11:00.000+05:00","genre":"Alternative","duration":"PT30S"},"data":[],"id":"dd5e0c5f-0707-406e-b0e8-c51c6cfb3728"}"""
-    private val jsonDeserialization = """{"tProfile":{"name":"Californication","author":"Red Hot Chili Peppers","uploader":{"uProfile":{"firstName":"VovanWithGlasses","secondName":"Biba","lastName":"Popovich","age":22},"auth":{"login":"Popovka","hashPass":"c2e55e75e592023cdcbe029816c14e07"},"id":"1c05c129-bfa2-466c-9b4c-896237749385"},"uploadDate":"2024-11-12T13:11:00.000+05:00","genre":"Alternative","duration":"PT30S"},"data":[],"id":"dd5e0c5f-0707-406e-b0e8-c51c6cfb3728"}"""
+    private val jsonDeserialization = """{"tProfile":{"name":"Californication","author":"Red Hot Chili Peppers","uploader":{"uProfile":{"firstName":"VovanWithGlasses","secondName":"Biba","lastName":"Popovich","age":22}, "auth":{"login":"Popovka","hashPass":"c2e55e75e592023cdcbe029816c14e07"}},"uploadDate":"2024-11-12T13:11:00.000+05:00","genre":"Alternative","duration":"PT30S"},"data":[]}"""
 
     @Test
     fun testTrackSerialization() {

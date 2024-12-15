@@ -3,28 +3,26 @@ package kt.main.infra.repositories
 import kt.main.core.Auth
 import kt.main.core.UProfile
 import kt.main.core.User
-import kt.main.infra.AuthTable
-import kt.main.infra.InsertDbError
-import kt.main.infra.UserProfilesTable
-import kt.main.infra.UsersTable
+import kt.main.infra.*
 import kt.main.infra.UsersTable.idUser
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.util.*
 
-class UserRepository(database: Database) : RepositoryBase<User>(database, UserProfilesTable, AuthTable, UsersTable) {
+class UserRepository(database: Database) : RepositoryBase<User>(database, UserProfilesTable, AuthTable, UsersTable),
+    IAuthCheck {
     override suspend fun getAll(): List<User> {
         return dbQuery { internalJoin().map { row -> createUserFromRow(row) } }
     }
 
     override suspend fun getByName(name: String): List<User> {
         return dbQuery {
-            internalJoin().where(UserProfilesTable.firstName eq name) .map { row -> createUserFromRow(row) }
+            internalJoin().where(UserProfilesTable.firstName eq name).map { row -> createUserFromRow(row) }
         }
     }
 
     override suspend fun getById(id: UUID): User? {
-        return dbQuery { internalJoin().where{ idUser eq id }.map { row -> createUserFromRow(row) }.singleOrNull() }
+        return dbQuery { internalJoin().where { idUser eq id }.map { row -> createUserFromRow(row) }.singleOrNull() }
     }
 
     override suspend fun update(entity: User) {
@@ -33,7 +31,7 @@ class UserRepository(database: Database) : RepositoryBase<User>(database, UserPr
             UsersTable
                 .select(UsersTable.idProfile, UsersTable.idAuth)
                 .where(idUser eq entity.id)
-                .map { row -> Pair(row[UsersTable.idProfile],row[UsersTable.idAuth])}
+                .map { row -> Pair(row[UsersTable.idProfile], row[UsersTable.idAuth]) }
                 .singleOrNull()
         }
 
@@ -84,9 +82,9 @@ class UserRepository(database: Database) : RepositoryBase<User>(database, UserPr
         }
     }
 
-    suspend fun checkAuth(auth: Auth): Boolean {
-        val hashPass =  dbQuery {
-                 AuthTable
+    override suspend fun checkAuth(auth: Auth): Boolean {
+        val hashPass = dbQuery {
+            AuthTable
                 .select(AuthTable.hashPass)
                 .where(AuthTable.login eq auth.login)
                 .map { row -> row[AuthTable.hashPass] }
@@ -101,7 +99,8 @@ class UserRepository(database: Database) : RepositoryBase<User>(database, UserPr
             .select(
                 idUser, UserProfilesTable.firstName,
                 UserProfilesTable.secondName, UserProfilesTable.lastName,
-                UserProfilesTable.age, AuthTable.login, AuthTable.hashPass)
+                UserProfilesTable.age, AuthTable.login, AuthTable.hashPass
+            )
     }
 
     private fun createUserFromRow(row: ResultRow): User {

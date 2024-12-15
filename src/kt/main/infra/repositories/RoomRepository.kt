@@ -17,8 +17,8 @@ import java.util.*
 
 class RoomRepository(
     database: Database,
-    private val trackRepository: TrackRepository,
-    private val userRepository: UserRepository
+    private val trackRepository: IDataRepository<Track>,
+    private val userRepository: IDataRepository<User>
 ) : RepositoryBase<Room>(database, RoomProfilesTable, RoomTable) {
 
     override suspend fun getAll(): List<Room> {

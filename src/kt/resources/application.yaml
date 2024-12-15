@@ -5,7 +5,16 @@ ktor:
   application:
     modules:
       - kt.main.api.UserRestKt.userRestAPI
+      - kt.main.api.MainRestKt.mainRestAPI
+
+database:
+  dbUrl: $dbUrl
+  dbUser: $dbUser
+  dbPassword: $dbPass
 
 jwt:
-  secret: "secret"
-  realm: "Access to 'hello'"
+  secret: $jwtSecret
+  realm: $jwtRealm
+
+webdav:
+  token: $webdavToken

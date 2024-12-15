@@ -39,7 +39,7 @@ build/
 .DS_Store
 
 ### Enviroment Setup Script###
-
+src/kt/.env
 .idea/*
 .DS_Store
 
