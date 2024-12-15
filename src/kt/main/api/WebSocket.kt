@@ -13,19 +13,18 @@ import kotlinx.coroutines.sync.withLock
 import kt.main.utils.WebSocketSessionHandler
 import java.util.UUID
 
-object WebSocketApi {
-
-}
 
 object WebSocketSessionManager {
     private val sessions = ConcurrentMap<UUID, WebSocketSessionHandler>()
 
-    fun Routing.addWebSocketHandler(sessionUUID: UUID) {
+    fun Routing.addWebSocketSession(sessionUUID: UUID): String {
         val sessionPath = "/session/$sessionUUID"
 
         webSocket(sessionPath) {
             createSession(sessionUUID, this)
         }
+
+        return sessionPath
     }
 
     private fun createSession(sessionUUID: UUID, session: DefaultWebSocketServerSession) {
