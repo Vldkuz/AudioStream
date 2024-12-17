@@ -3,49 +3,35 @@ package kt.main.api
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.server.application.*
-import kt.main.core.Room
-import kt.main.core.Track
-import kt.main.core.User
-import kt.main.infra.IAuthCheck
-import kt.main.infra.IDataRepository
 import kt.main.infra.repositories.RoomRepository
 import kt.main.infra.repositories.TrackRepository
 import kt.main.infra.repositories.UserRepository
-import kt.webDav.IFileManager
 import kt.webDav.YandexFileManager
 import org.jetbrains.exposed.sql.Database
-import org.koin.dsl.module
-import org.koin.ktor.plugin.Koin
 
 
-fun Application.mainRestAPI() {
-    val mainCfg = environment.config
+// Сделал так, поскольку в DI получается, что почему-то кастит пользователя к комнате и т.п непонятно, зачем.
 
-    val appModule = module {
-        single<IDataRepository<User>>(createdAtStart = true) {UserRepository(get())}
-        // single<IDataRepository<Track>>(createdAtStart = true) { TrackRepository(get(), get(), get()) }
-        // single<IDataRepository<Room>> { RoomRepository(get(), get(), get())  }
+class ServiceLocator(app: Application) {
+    private val mainCfg = app.environment.config
 
-        single <IAuthCheck>(createdAtStart = true) { UserRepository(get())}
+    private val db = Database.connect(
+        mainCfg.property("database.dbUrl").getString(),
+        user = mainCfg.property("database.dbUser").getString(),
+        password = mainCfg.property("database.dbPassword").getString()
+    )
 
-        single<IFileManager>(createdAtStart = true) {
-            YandexFileManager(
-                mainCfg.property("webdav.token").getString(),
-                HttpClient(CIO)
-            )
-        }
+    private val webDav = YandexFileManager(
+        mainCfg.property("webdav.token").getString(),
+        HttpClient(CIO)
+    )
 
-        single<Database>(createdAtStart = true) { Database.connect(
-            mainCfg.property("database.dbUrl").getString(),
-            user = mainCfg.property("database.dbUser").getString(),
-            password = mainCfg.property("database.dbPassword").getString()
-        )
-        }
-    }
+    val userRep = UserRepository(db)
+    val trackRep = TrackRepository(db, webDav, userRep)
+    val roomRep = RoomRepository(db, trackRep, userRep)
+}
 
 
-
-    install(Koin) {
-        modules(appModule)
-    }
+fun Application.configure(): ServiceLocator {
+    return ServiceLocator(this)
 }

@@ -11,21 +11,29 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kt.main.core.Room
+import kt.main.core.Track
 import kt.main.core.UProfile
 import kt.main.core.User
 import kt.main.infra.IAuthCheck
 import kt.main.infra.IDataRepository
 import kt.main.utils.AuthForm
 import kt.main.utils.CredentialsFormer
+import org.jetbrains.exposed.exceptions.ExposedSQLException
 import org.koin.ktor.ext.inject
+import org.postgresql.util.PSQLException
 import java.util.*
 
-fun Application.userRestAPI() {
+fun Application.restAPI() {
     val secret = environment.config.property("jwt.secret").getString()
     val authJWTName = "auth-jwt"
 
-    val userRepository by inject<IDataRepository<User>>()
-    val authRepository by inject<IAuthCheck>()
+    val components = configure()
+
+    val userRepository = components.userRep as IDataRepository<User>
+    val authRepository = components.userRep as IAuthCheck
+    val trackRepository = components.trackRep as IDataRepository<Track>
+    val roomRepository = components.roomRep as IDataRepository<Room>
 
     install(ContentNegotiation) {
         json()
@@ -151,7 +159,12 @@ fun Application.userRestAPI() {
                 val fmtAuth = CredentialsFormer.form2Auth(CredentialsFormer.auth2Form(user.auth!!))
                 val fmtUser = User(user.uProfile, fmtAuth, user.id)
 
-                userRepository.add(fmtUser)
+                try {
+                    userRepository.add(fmtUser)
+                } catch (_: ExposedSQLException) {
+                    call.respond(HttpStatusCode.BadRequest)
+                }
+
                 call.respond(HttpStatusCode.Created)
             }
 
@@ -172,6 +185,94 @@ fun Application.userRestAPI() {
             }
         }
 
+        authenticate(authJWTName) {
+            route("/rooms") {
+                get{call.respond(roomRepository.getAll())}
+
+                get("/byName/{name}") {
+                    val room = call.parameters["name"].orEmpty()
+                    call.respond(roomRepository.getByName(room))
+                }
+
+                get("/byId/{id}") {
+                    val id = UUID.fromString(call.parameters["id"])
+                    val room = roomRepository.getById(id)
+                    val rooms = listOf(room)
+                    call.respond(rooms)
+                }
+
+                put("/update/{id}") {
+                    val id = UUID.fromString(call.parameters["id"])
+                    val userRoom = call.receive<Room>()
+
+                    when(val dbRoom = roomRepository.getById(id)) {
+                        null -> call.respond(HttpStatusCode.NotFound)
+                        else -> {
+                            val room = Room(userRoom.rProfile, userRoom.participants, userRoom.trackQueue, dbRoom.id)
+                            roomRepository.update(room)
+                            call.respond(HttpStatusCode.OK)
+                        }
+                    }
+                }
+
+                delete("/remove/{id}") {
+                    val id = UUID.fromString(call.parameters["id"].orEmpty())
+
+                    when (val dbRoom = roomRepository.getById(id)) {
+                        null -> call.respond(HttpStatusCode.NotFound)
+                        else -> {roomRepository.remove(dbRoom)}
+                    }
+                }
+
+                post("/add") {
+                    val room = call.receive<Room>()
+                    roomRepository.add(room)
+                    call.respond(HttpStatusCode.OK)
+                }
+            }
+
+            route("/tracks") {
+                get { call.respond(trackRepository.getAll()) }
+
+                get("/byName/{name}") {
+                    val name = call.parameters["name"].orEmpty()
+                    call.respond(trackRepository.getByName(name))
+                }
+
+                get("/byId/{id}") {
+                    val id = UUID.fromString(call.parameters["id"].orEmpty())
+                    val track = trackRepository.getById(id)
+                    val tracks = listOf(track)
+                    call.respond(tracks)
+                }
+
+                put("/update/{id}") {
+                    val id = UUID.fromString(call.parameters["id"])
+                    val track = call.receive<Track>()
+                    when (val dbTrack = trackRepository.getById(id)) {
+                        null -> call.respond(HttpStatusCode.NotFound)
+                        else -> {
+                            val newTrack = Track(track.tProfile, track.data, dbTrack.id)
+                            trackRepository.update(newTrack)
+                        }
+                    }
+                }
+
+                delete("/remove/{id}") {
+                    val id = UUID.fromString(call.parameters["id"].orEmpty())
+                    when (val dbTrack = trackRepository.getById(id)) {
+                        null -> call.respond(HttpStatusCode.NotFound)
+                        else -> {trackRepository.remove(dbTrack)}
+                    }
+                }
+
+                post("/add") {
+                    val track = call.receive<Track>()
+                    trackRepository.add(track)
+                    call.respond(HttpStatusCode.OK)
+                }
+            }
+        }
 
     }
 }

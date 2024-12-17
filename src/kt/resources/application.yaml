@@ -4,8 +4,7 @@ ktor:
 
   application:
     modules:
-      - kt.main.api.UserRestKt.userRestAPI
-      - kt.main.api.MainRestKt.mainRestAPI
+      - kt.main.api.RoutingKt.restAPI
 
 database:
   dbUrl: $dbUrl
