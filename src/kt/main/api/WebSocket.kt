@@ -18,7 +18,7 @@ object WebSocketSessionManager {
     private val sessions = ConcurrentMap<UUID, WebSocketSessionHandler>()
 
     fun Routing.addWebSocketSession(sessionUUID: UUID): String {
-        val sessionPath = "/session/$sessionUUID"
+        val sessionPath = "/session/{sessionUUID}"
 
         webSocket(sessionPath) {
             createSession(sessionUUID, this)
@@ -36,15 +36,11 @@ object WebSocketSessionManager {
         sessions[sessionUUID] = handler
 
         CoroutineScope(Dispatchers.IO).launch {
-            try {
-                handler.handleSession(session)
-            } finally {
-                closeSession(sessionUUID)
-            }
+            handler.handleSession(session)
         }
     }
 
-    private fun closeSession(sessionUUID: UUID) {
+    fun closeSession(sessionUUID: UUID) {
         sessions.remove(sessionUUID)
     }
 

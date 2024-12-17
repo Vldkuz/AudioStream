@@ -11,6 +11,7 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kt.main.api.WebSocketSessionManager.addWebSocketSession
 import kt.main.core.Room
 import kt.main.core.Track
 import kt.main.core.UProfile
@@ -274,5 +275,37 @@ fun Application.restAPI() {
             }
         }
 
+        authenticate(authJWTName) {
+            route("/sessions") {
+                post("/create") {
+                    val id = UUID.fromString(call.parameters["id"])
+                    val sessionUrl = addWebSocketSession(id)
+                    call.respond(HttpStatusCode.Created, mapOf("sessionUrl" to sessionUrl))
+                }
+
+                delete("/delete") {
+                    val sessionId = call.parameters["id"]
+
+                    if (sessionId.isNullOrEmpty()) {
+                        call.respond(HttpStatusCode.BadRequest, "Session ID is required")
+                        return@delete
+                    }
+
+                    try {
+                        val sessionUUID = UUID.fromString(sessionId)
+                        val sessionHandler = WebSocketSessionManager.getSession(sessionUUID)
+
+                        if (sessionHandler != null) {
+                            WebSocketSessionManager.closeSession(sessionUUID)
+                            call.respond(HttpStatusCode.OK, "Session $sessionId successfully removed")
+                        } else {
+                            call.respond(HttpStatusCode.NotFound, "Session $sessionId not found")
+                        }
+                    } catch (e: IllegalArgumentException) {
+                        call.respond(HttpStatusCode.BadRequest, "Invalid session ID format")
+                    }
+                }
+            }
+        }
     }
 }
