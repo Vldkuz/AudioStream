@@ -277,13 +277,13 @@ fun Application.restAPI() {
 
         authenticate(authJWTName) {
             route("/sessions") {
-                post("/create") {
+                post("/create/{id}") {
                     val id = UUID.fromString(call.parameters["id"])
                     val sessionUrl = addWebSocketSession(id)
                     call.respond(HttpStatusCode.Created, mapOf("sessionUrl" to sessionUrl))
                 }
 
-                delete("/delete") {
+                delete("/delete/{id}") {
                     val sessionId = call.parameters["id"]
 
                     if (sessionId.isNullOrEmpty()) {
@@ -297,12 +297,30 @@ fun Application.restAPI() {
 
                         if (sessionHandler != null) {
                             WebSocketSessionManager.closeSession(sessionUUID)
-                            call.respond(HttpStatusCode.OK, "Session $sessionId successfully removed")
+                            call.respond(HttpStatusCode.OK)
                         } else {
-                            call.respond(HttpStatusCode.NotFound, "Session $sessionId not found")
+                            call.respond(HttpStatusCode.NotFound)
                         }
                     } catch (e: IllegalArgumentException) {
-                        call.respond(HttpStatusCode.BadRequest, "Invalid session ID format")
+                        call.respond(HttpStatusCode.BadRequest)
+                    }
+                }
+
+                post("/addTrack/{sessionId}/{trackId}") {
+                    val sessionId = UUID.fromString(call.parameters["sessionId"])
+                    val trackId = UUID.fromString(call.parameters["trackId"])
+
+                    when (val track = trackRepository.getById(trackId)) {
+                        null -> call.respond(HttpStatusCode.NotFound)
+                        else -> {
+                            when (val session = WebSocketSessionManager.getSession(sessionId)) {
+                                null -> call.respond(HttpStatusCode.NotFound)
+                                else -> {
+                                    session.addData(track.data)
+                                    call.respond(HttpStatusCode.OK)
+                                }
+                            }
+                        }
                     }
                 }
             }
